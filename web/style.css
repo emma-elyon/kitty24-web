@@ -1,0 +1,26 @@
+html, body {
+	background-color: #1b1b1b;
+	color: white;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+#video {
+	image-rendering: pixelated;
+}
+
+#log {
+	position: absolute;
+	top: 0;
+	left: 0;
+	text-shadow: 
+		 0.0pt  0.5pt 0pt #1b1b1b,
+		 0.0pt -0.5pt 0pt #1b1b1b,
+		 0.5pt  0.0pt 0pt #1b1b1b,
+		-0.5pt  0.0pt 0pt #1b1b1b,
+		 0.5pt  0.5pt 0pt #1b1b1b,
+		-0.5pt  0.5pt 0pt #1b1b1b,
+		-0.5pt -0.5pt 0pt #1b1b1b,
+		 0.5pt -0.5pt 0pt #1b1b1b;
+}

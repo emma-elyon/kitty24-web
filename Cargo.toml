@@ -3,4 +3,11 @@ name = "kitty24"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
+virtual_machine = { path = "crates/virtual_machine" }
+
+[profile.release]
+lto = true
