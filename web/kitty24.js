@@ -8,7 +8,9 @@ const FRAME_INTERVAL = 1000.0 / FRAME_RATE
 const PAGES = 1024 * 1024 * 24 / (64 * 1024)
 
 // Global emulator variables.
-let log = document.getElementById('log')
+const log = document.getElementById('log')
+const graph = document.getElementById('graph')
+const graphContext = graph.getContext('2d')
 let startTime, frameCount = 0
 
 // Global virtual machine variables.
@@ -16,7 +18,7 @@ let kitty24
 
 // Initialize global video context as full-screen quad.
 const canvas = document.getElementById('video')
-const videoContext = canvas.getContext("webgl2")
+const videoContext = canvas.getContext('webgl2')
 const vertexSource = `#version 300 es
 	in vec2 position;
 	uniform vec2 resolution;
@@ -174,9 +176,22 @@ const update = vm => then => now => {
 
 		// Update audio context with samples if we're not too far ahead.
 		if (skew < 2400 && audioContext.state == "running") {
+			const value = audioBuffer.slice()
+			graph.width = value.length
+			graph.height = 256
+			graphContext.strokeStyle = "red"
+			graphContext.beginPath()
+			value.forEach((value, index) => {
+				if (index === 0) {
+					graphContext.moveTo(index, (value * 0.5 + 0.5) * 255)
+				} else {
+					graphContext.lineTo(index, (value * 0.5 + 0.5) * 255)
+				}
+			})
+			graphContext.stroke()
 			node.port.postMessage({
 				type: "samples",
-				value: audioBuffer.slice(),
+				value,
 			})
 		}
 	}

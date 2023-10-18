@@ -10,6 +10,12 @@ html, body {
 	image-rendering: pixelated;
 }
 
+#graph {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
 #log {
 	position: absolute;
 	top: 0;
