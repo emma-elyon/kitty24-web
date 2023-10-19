@@ -3,7 +3,7 @@ use virtual_machine::VirtualMachine;
 /// Create new virtual machine.
 #[no_mangle]
 fn virtual_machine() -> *mut VirtualMachine {
-    Box::into_raw(Box::new(VirtualMachine::default()))
+    Box::into_raw(Box::default())
 }
 
 /// Return address of audio output from virtual machine.

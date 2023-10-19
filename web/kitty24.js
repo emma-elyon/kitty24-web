@@ -113,7 +113,7 @@ const onmessage = ({ data: { type, value }}) => {
 	let audioOffset = kitty24.audio(virtualMachine)
 	let videoOffset = kitty24.video(virtualMachine)
 
-	// Initialize global audio and video memory buffer views.
+	// Initialize global audio and video memory buffer views once.
 	audioBuffer = new Float32Array(kitty24.memory.buffer, audioOffset, SAMPLE_RATE / FRAME_RATE)
 	videoBuffer = new Uint8ClampedArray(kitty24.memory.buffer, videoOffset, WIDTH * HEIGHT * 4)
 
@@ -163,11 +163,21 @@ const update = vm => then => now => {
 		canvas.style.top = `${Math.floor(top)}px`
 
 		// Update texture and render quad.
-		videoContext.texSubImage2D(target, 0, 0, 0, WIDTH, HEIGHT, videoContext.RGBA, videoContext.UNSIGNED_BYTE, videoBuffer)
+		videoContext.texSubImage2D(
+			target,
+			0, // level
+			0, // xoffset
+			0, // yoffset
+			WIDTH,
+			HEIGHT,
+			videoContext.RGBA,
+			videoContext.UNSIGNED_BYTE,
+			videoBuffer
+		)
 		videoContext.drawArrays(videoContext.TRIANGLE_STRIP, 0, 4)
 
 		// Update audio context with samples if we're not too far ahead.
-		if (skew < 2400 && audioContext.state == "running") {
+		if (skew < 1600 && audioContext.state == "running") {
 			const value = audioBuffer.slice()
 			graph.width = value.length
 			graph.height = 256

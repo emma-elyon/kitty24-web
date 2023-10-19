@@ -94,10 +94,8 @@ impl VirtualMachine {
 
     /// Step the virtual machine for `cycles`.
     fn step(&mut self, cycles: usize) {
-		for _ in 0..cycles {
-
-		}
-	}
+        for _ in 0..cycles {}
+    }
 
     /// Sample audio channels for output buffer.
     fn sample(&mut self, cycle: usize) {
@@ -105,7 +103,8 @@ impl VirtualMachine {
         let increment = self.ram[0] as f32 * INCREMENT;
         self.sin_phase += increment;
         self.sin_phase %= TAU;
-        self.audio[sample_index] = (self.sin_phase.sin() + self.ram[0] as f32 / 255.0).signum();
+        self.audio[sample_index] =
+            0.25 * (self.sin_phase.sin() + self.ram[0] as f32 / 255.0).signum();
     }
 }
 
