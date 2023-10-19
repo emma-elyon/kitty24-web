@@ -8,6 +8,8 @@ html, body {
 
 #video {
 	image-rendering: pixelated;
+	position: absolute;
+	/* translate: 0% 50%; */
 }
 
 #graph {

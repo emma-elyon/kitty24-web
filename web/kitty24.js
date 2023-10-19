@@ -21,16 +21,9 @@ const canvas = document.getElementById('video')
 const videoContext = canvas.getContext('webgl2')
 const vertexSource = `#version 300 es
 	in vec2 position;
-	uniform vec2 resolution;
 	out vec2 uv;
 	void main() {
-		vec2 scaled_position = vec2(
-			position.x * 320.0 / resolution.x,
-			position.y * 180.0 / resolution.y
-		);
-		float scale = min(resolution.x / 320.0, resolution.y / 180.0);
-		scale = floor(scale) == 0.0 ? scale : floor(scale);
-		gl_Position = vec4(scaled_position.x * scale, -scaled_position.y * scale, 0, 1);
+		gl_Position = vec4(position.x, position.y, 0.0, 1.0);
 		uv = position * 0.5 + 0.5;
 	}
 `
@@ -55,12 +48,7 @@ videoContext.attachShader(program, fragmentShader)
 videoContext.linkProgram(program)
 videoContext.useProgram(program)
 const buffer = videoContext.createBuffer()
-const vertices = new Float32Array([
-	-1.0, -1.0,
-	-1.0,  1.0,
-	 1.0, -1.0,
-	 1.0,  1.0,
-])
+const vertices = new Float32Array([-1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0])
 videoContext.bindBuffer(videoContext.ARRAY_BUFFER, buffer)
 videoContext.bufferData(videoContext.ARRAY_BUFFER, vertices, videoContext.STATIC_DRAW)
 const positionAttributeLocation = videoContext.getAttribLocation(program, "position")
@@ -80,8 +68,6 @@ videoContext.activeTexture(videoContext.TEXTURE0)
 videoContext.bindTexture(videoContext.TEXTURE_2D, texture)
 const samplerUniformLocation = videoContext.getUniformLocation(program, "sampler")
 videoContext.uniform1i(samplerUniformLocation, 0)
-const resolutionUniformLocation = videoContext.getUniformLocation(program, "resolution")
-videoContext.uniform2f(resolutionUniformLocation, 320, 180)
 
 let videoBuffer
 
@@ -163,14 +149,20 @@ const update = vm => then => now => {
 		}
 
 		// Update video context.
-		// TODO: Support High DPI/user zoom:
-		// https://webgl2fundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
-		if (canvas.width != window.innerWidth || canvas.height != window.innerHeight) {
-			canvas.width = window.innerWidth
-			canvas.height = window.innerHeight
-			videoContext.viewport(0, 0, canvas.width, canvas.height)
-		}
-		videoContext.uniform2f(resolutionUniformLocation, canvas.width, canvas.height)
+		// Supports High DPI/user zoom.
+		// TODO: Avoid doing this outside of zoom- or resize events.
+		const dpr = window.devicePixelRatio
+		const width = window.innerWidth * dpr
+		const height = window.innerHeight * dpr
+		const [intWidth, intHeight] = [Math.floor(width / 320.0), Math.floor(height / 180.0)]
+		const scale = Math.min(intWidth, intHeight)
+		canvas.style.scale = scale / dpr
+		const left = width / 2.0 / dpr - canvas.width / 2.0
+		const top = height / 2.0 / dpr - canvas.height / 2.0
+		canvas.style.left = `${Math.floor(left)}px`
+		canvas.style.top = `${Math.floor(top)}px`
+
+		// Update texture and render quad.
 		videoContext.texSubImage2D(target, 0, 0, 0, WIDTH, HEIGHT, videoContext.RGBA, videoContext.UNSIGNED_BYTE, videoBuffer)
 		videoContext.drawArrays(videoContext.TRIANGLE_STRIP, 0, 4)
 
