@@ -3,6 +3,10 @@
 version = 3
 
 [[package]]
+name = "common"
+version = "0.1.0"
+
+[[package]]
 name = "kitty24"
 version = "0.1.0"
 dependencies = [
@@ -12,3 +16,6 @@ dependencies = [
 [[package]]
 name = "virtual_machine"
 version = "0.1.0"
+dependencies = [
+ "common",
+]

@@ -1,4 +1,9 @@
+mod cpu;
+
 use std::f32::consts::TAU;
+
+use common::*;
+use cpu::*;
 
 const BITS: usize = 24;
 const MEMORY_SIZE: usize = 2_usize.pow(BITS as u32);
@@ -25,6 +30,7 @@ pub struct VirtualMachine {
     pub audio: Vec<f32>,
     sin_phase: f32,
     pub video: Vec<u8>,
+    cpu: Cpu,
 }
 
 impl VirtualMachine {
@@ -94,7 +100,28 @@ impl VirtualMachine {
 
     /// Step the virtual machine for `cycles`.
     fn step(&mut self, cycles: usize) {
-        for _ in 0..cycles {}
+        for _ in 0..cycles {
+            let program_counter = self.cpu[REGISTER_PROGRAM_COUNTER];
+            // We *can* run into an unchecked unwrap here, in case the program counter is at the RAM boundary.
+            let [a, b, c]: [u8; 3] = self.ram
+                [program_counter as usize..program_counter as usize + 3]
+                .try_into()
+                .unwrap();
+            let instruction = u32::from_be_bytes([a, b, c, 0]);
+            let c = instruction & 0b1_00000_000000_000000_000000;
+            let c = c != 0;
+            if !c || self.cpu.condition {
+                let op = instruction & 0b0_11111_000000_000000_000000;
+                let op = op >> 18;
+                let op: Op = op.into();
+                use Op::*;
+                match op {
+                    Let | Lethi => self.l(op, instruction),
+                    Load | Store => self.m(op, instruction),
+                    Ori | Nori | Andi | Xori => self.i(op, instruction),
+                }
+            }
+        }
     }
 
     /// Sample audio channels for output buffer.
@@ -106,6 +133,64 @@ impl VirtualMachine {
         self.audio[sample_index] =
             0.25 * (self.sin_phase.sin() + self.ram[0] as f32 / 255.0).signum();
     }
+
+    /// Execute immediate instruction.
+    fn i(&mut self, op: Op, instruction: u32) {
+        let r = instruction & 0_77_00_00;
+        let r = r >> 12;
+        let s = instruction & 0_00_77_00;
+        let s = s >> 6;
+        let u = instruction & 0_00_00_77;
+        use Op::*;
+        match op {
+            Ori => self.cpu.set(r, s | u),
+            Nori => self.cpu.set(r, !(s | u)),
+            Andi => self.cpu.set(r, s & u),
+            Xori => self.cpu.set(r, s ^ u),
+            _ => todo!(),
+        }
+    }
+
+    /// Execute let instruction.
+    fn l(&mut self, op: Op, instruction: u32) {
+        let r = instruction & 0_77_00_00;
+        let r = r >> 12;
+        let u = instruction & 0_00_77_77;
+        match op {
+            Op::Let => self.cpu.set(r, u),
+            Op::Lethi => {
+                let lo = self.cpu[r] & 0_77_77;
+                let u = u << 12;
+                self.cpu.set(r, lo | u)
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn m(&mut self, op: Op, instruction: u32) {
+        let r = instruction & 0_77_00_00;
+        let r = r >> 12;
+        let s = instruction & 0_00_77_00;
+        let s = s >> 6;
+        let i = instruction & 0_00_00_77;
+        // let i = ((i as u8) << 2) as i8 as i32;
+        let i = (i << 2) as i8 as i32 >> 2;
+        use Op::*;
+        match op {
+            Load => {
+                let address = s as i32 + i;
+                // TODO: Add underflow test.
+                let value = self.ram[address as usize] as u32;
+                self.cpu.set(r, value)
+            }
+            Store => {
+                let address = r as i32 + i;
+                // TODO: Add underflow test.
+                self.ram[address as usize] = self.cpu[s] as u8;
+            }
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Default for VirtualMachine {
@@ -115,6 +200,7 @@ impl Default for VirtualMachine {
             audio: vec![0.0; SAMPLES_PER_FRAME],
             sin_phase: 0.0,
             video: vec![0; WIDTH * HEIGHT * 4],
+            cpu: Cpu::default(),
         }
     }
 }
