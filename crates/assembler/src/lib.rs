@@ -140,6 +140,7 @@ impl Assembler {
             "lessi" => (Lessi, false),
             "addi" => (Addi, false),
             "subi" => (Subi, false),
+            "cstore" => (Store, true),
             "caddi" => (Addi, true),
             _ => todo!(),
         };

@@ -14,11 +14,14 @@ OpI = {
   | ^"subi"
   | ^"caddi"
   | ^"store"
+  | ^"cstore"
 }
 
 OpL = {
     ^"lethi"
   | ^"let"
+  | ^"clethi"
+  | ^"clet"
 }
 
 OpR = {

@@ -1,4 +1,10 @@
 let     r4, 0
+let     r1, 0xFA0003
+lethi   r1, 0xFA0003
+let     r7, 57
+store   r1, r7, 0
+let     r5, 128
+let     r6, 0
 loop:
     let     r1, 0xFB0000
     lethi   r1, 0xFB0000
@@ -14,4 +20,10 @@ loop:
         subi    pc, pc, ~.fill
 .end:
 addi    r4, r4, 1
+less    r0, r4, r5
+clet    r4, 0
+clet    r1, 0xFA0003
+clethi  r1, 0xFA0003
+cstore  r1, r7, 0
+caddi   r7, r7, 1
 subi    pc, pc, ~loop

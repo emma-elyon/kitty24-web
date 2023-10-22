@@ -145,10 +145,12 @@ impl VirtualMachine {
     /// Sample audio channels for output buffer.
     fn sample(&mut self, cycle: usize) {
         let sample_index = cycle / CYCLES_PER_SAMPLE;
-        let increment = 220.0 * INCREMENT;
+        let midi = self.ram[0xFA0003] as f32 + self.ram[0xFA0004] as f32 / 256.0;
+        let frequency = 2.0_f32.powf((midi - 69.0) / 12.0) * 440.0;
+        let increment = frequency * INCREMENT;
         self.sin_phase += increment;
         self.sin_phase %= TAU;
-        self.audio[sample_index] = 0.25 * self.sin_phase.sin();
+        self.audio[sample_index] = 0.25 * self.sin_phase.sin().signum();
     }
 
     /// Execute immediate instruction.
