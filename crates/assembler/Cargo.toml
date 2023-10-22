@@ -1,0 +1,9 @@
+[package]
+name = "assembler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+pest = "2.7.4"
+pest_derive = { version = "2.7.4", features = ["grammar-extras"] }

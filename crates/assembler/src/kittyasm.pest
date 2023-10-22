@@ -1,0 +1,120 @@
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+COMMENT    = _{ ";" ~ (!"\n" ~ ANY) }
+Program    =  { SOI ~ (Instruction | LabelDefinition)* ~ EOI }
+
+Instruction = {
+    OpL ~ L
+  | OpI ~ I
+  | OpR ~ R
+}
+
+OpI = {
+    ^"lessi"
+  | ^"addi"
+  | ^"subi"
+  | ^"caddi"
+  | ^"store"
+}
+
+OpL = {
+    ^"lethi"
+  | ^"let"
+}
+
+OpR = {
+    ^"less"
+}
+
+I = _{ Register ~ "," ~ Register ~ "," ~ Value }
+L = _{ Register ~ "," ~ Value }
+R = _{ Register ~ "," ~ Register ~ "," ~ Register }
+
+Value = _{ Number | LabelReference }
+
+Number      =  { Hexadecimal | Binary | Octal | Decimal }
+Decimal     = @{ "0" | ('1'..'9') ~ ('0'..'9')* }
+Octal       = @{ "0" ~ ('1'..'7') ~ ('0'..'7')* }
+Hexadecimal = @{ ^"0x" ~ ('0'..'9' | 'A'..'F' | 'a'..'f')+ }
+Binary      = @{ ^"0b" ~ ("0" | "1")+ }
+
+Label       = _{ GlobalLabel | LocalLabel }
+GlobalLabel = { Identifier }
+LocalLabel  = { "." ~ Identifier }
+
+LabelReference         = { RelativeLabelReference | AbsoluteLabelReference }
+RelativeLabelReference = { "~" ~ Label }
+AbsoluteLabelReference = { Label }
+
+LabelDefinition = { Label ~ ":" }
+
+// TODO: Exclude prefix numbers to not collide with integer values.
+Identifier = @{ (!("." | "~" | ":") ~ (ALPHABETIC | NUMBER | SYMBOL))+ }
+
+Register = {
+    ^"pc" // Equivalent to rF
+
+  | ^"r0"
+  | ^"r1"
+  | ^"r2"
+  | ^"r3"
+  | ^"r4"
+  | ^"r5"
+  | ^"r6"
+  | ^"r7"
+  | ^"r8"
+  | ^"r9"
+  | ^"ra"
+  | ^"rb"
+  | ^"rc"
+  | ^"rd"
+  | ^"re"
+  | ^"rf"
+  | ^"r10"
+  | ^"r11"
+  | ^"r12"
+  | ^"r13"
+  | ^"r14"
+  | ^"r15"
+  | ^"r16"
+  | ^"r17"
+  | ^"r18"
+  | ^"r19"
+  | ^"r1a"
+  | ^"r1b"
+  | ^"r1c"
+  | ^"r1d"
+  | ^"r1e"
+  | ^"r1f"
+  | ^"r20"
+  | ^"r21"
+  | ^"r22"
+  | ^"r23"
+  | ^"r24"
+  | ^"r25"
+  | ^"r26"
+  | ^"r27"
+  | ^"r28"
+  | ^"r29"
+  | ^"r2a"
+  | ^"r2b"
+  | ^"r2c"
+  | ^"r2d"
+  | ^"r2e"
+  | ^"r2f"
+  | ^"r30"
+  | ^"r31"
+  | ^"r32"
+  | ^"r33"
+  | ^"r34"
+  | ^"r35"
+  | ^"r36"
+  | ^"r37"
+  | ^"r38"
+  | ^"r39"
+  | ^"r3a"
+  | ^"r3b"
+  | ^"r3c"
+  | ^"r3d"
+  | ^"r3e"
+  | ^"r3f"
+}

@@ -1,0 +1,17 @@
+let     r4, 0
+loop:
+    let     r1, 0xFB0000
+    lethi   r1, 0xFB0000
+    addi    r2, r4, 0
+    let     r3, 0x00E100
+    lethi   r3, 0x00E100
+    .fill:
+        store   r1, r2, 0
+        addi    r1, r1, 1
+        addi    r2, r2, 1
+        less    r0, r2, r3
+        caddi   pc, pc, ~.end
+        subi    pc, pc, ~.fill
+.end:
+addi    r4, r4, 1
+subi    pc, pc, ~loop

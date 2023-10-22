@@ -34,6 +34,19 @@ pub struct VirtualMachine {
 }
 
 impl VirtualMachine {
+    /// Create a new virtual machine with the given ROM.
+    pub fn new(rom: Vec<u8>) -> Self {
+        let mut ram = vec![0; MEMORY_SIZE];
+        ram.splice(0..rom.len(), rom);
+        Self {
+            ram,
+            audio: vec![0.0; SAMPLES_PER_FRAME],
+            sin_phase: 0.0,
+            video: vec![0; WIDTH * HEIGHT * 4],
+            cpu: Cpu::default(),
+        }
+    }
+
     /// Run the virtual machine for one frame.
     pub fn run(&mut self) {
         for y in 0..HEIGHT {
@@ -42,9 +55,10 @@ impl VirtualMachine {
                 self.step(CYCLES_PER_PIXEL);
                 // This is a video cycle, update the pixel.
                 let color_index = (x + y * WIDTH) * 4;
-                self.video[color_index + 0] = 127 * x as u8 + self.ram[0];
+                let ram_index = 0xFB0000 + x + y * WIDTH;
+                self.video[color_index + 0] = self.ram[ram_index];
                 self.video[color_index + 1] = 0;
-                self.video[color_index + 2] = 127 * y as u8 - self.ram[0];
+                self.video[color_index + 2] = 0;
                 self.video[color_index + 3] = 255;
                 let cycle = cycle + x * CYCLES_PER_PIXEL;
                 if cycle % CYCLES_PER_SAMPLE == 0 {
@@ -91,23 +105,26 @@ impl VirtualMachine {
             // cycle = at extra sample cycle
             self.sample(cycle);
         }
+        // TODO: self.step(cycles_after_last_sample)
         // let cycle = cycle + cycles_after_first_sample
         // cycle = at next frame (ideally)
 
         // self.frames += self.audio.len();
-        self.ram[0] += 1;
+        // self.ram[0] += 1;
     }
 
     /// Step the virtual machine for `cycles`.
     fn step(&mut self, cycles: usize) {
         for _ in 0..cycles {
             let program_counter = self.cpu[REGISTER_PROGRAM_COUNTER];
-            // We *can* run into an unchecked unwrap here, in case the program counter is at the RAM boundary.
-            let [a, b, c]: [u8; 3] = self.ram
-                [program_counter as usize..program_counter as usize + 3]
-                .try_into()
-                .unwrap();
-            let instruction = u32::from_be_bytes([a, b, c, 0]);
+            self.cpu.set(REGISTER_PROGRAM_COUNTER, program_counter + 3);
+            // TODO: Avoid overflow.
+            let instruction = u32::from_be_bytes([
+                0,
+                self.ram[program_counter as usize + 0],
+                self.ram[program_counter as usize + 1],
+                self.ram[program_counter as usize + 2],
+            ]);
             let c = instruction & 0b1_00000_000000_000000_000000;
             let c = c != 0;
             if !c || self.cpu.condition {
@@ -118,7 +135,8 @@ impl VirtualMachine {
                 match op {
                     Let | Lethi => self.l(op, instruction),
                     Load | Store => self.m(op, instruction),
-                    Ori | Nori | Andi | Xori => self.i(op, instruction),
+                    Ori | Nori | Andi | Xori | Lessi | Addi | Subi => self.i(op, instruction),
+                    Less => self.r(op, instruction),
                 }
             }
         }
@@ -127,80 +145,112 @@ impl VirtualMachine {
     /// Sample audio channels for output buffer.
     fn sample(&mut self, cycle: usize) {
         let sample_index = cycle / CYCLES_PER_SAMPLE;
-        let increment = self.ram[0] as f32 * INCREMENT;
+        let increment = 220.0 * INCREMENT;
         self.sin_phase += increment;
         self.sin_phase %= TAU;
-        self.audio[sample_index] =
-            0.25 * (self.sin_phase.sin() + self.ram[0] as f32 / 255.0).signum();
+        self.audio[sample_index] = 0.25 * self.sin_phase.sin();
     }
 
     /// Execute immediate instruction.
     fn i(&mut self, op: Op, instruction: u32) {
-        let r = instruction & 0_77_00_00;
+        let r = instruction & 0o77_00_00;
         let r = r >> 12;
-        let s = instruction & 0_00_77_00;
+        let s = instruction & 0o00_77_00;
         let s = s >> 6;
-        let u = instruction & 0_00_00_77;
+        let s = self.cpu[s];
+        let u = instruction & 0o00_00_77;
         use Op::*;
         match op {
-            Ori => self.cpu.set(r, s | u),
-            Nori => self.cpu.set(r, !(s | u)),
-            Andi => self.cpu.set(r, s & u),
-            Xori => self.cpu.set(r, s ^ u),
-            _ => todo!(),
+            Ori => {
+                self.cpu.set(r, s | u);
+                self.cpu.condition = s | u == 0
+            }
+            Nori => {
+                self.cpu.set(r, !(s | u));
+                self.cpu.condition = !(s | u) == 0
+            }
+            Andi => {
+                self.cpu.set(r, s & u);
+                self.cpu.condition = s & u == 0
+            }
+            Xori => {
+                self.cpu.set(r, s ^ u);
+                self.cpu.condition = s ^ u == 0
+            }
+            Lessi => {
+                self.cpu.set(r, (s < u) as u32);
+                self.cpu.condition = s == u;
+            }
+            Addi => {
+                self.cpu.set(r, s + u);
+                self.cpu.condition = 0xFFFFFF < s + u;
+            }
+            Subi => {
+                self.cpu.set(r, s - u);
+                self.cpu.condition = 0 > s as i32 - u as i32;
+            }
+            _ => todo!("Op: 0o{:o}", op as u32),
         }
     }
 
     /// Execute let instruction.
     fn l(&mut self, op: Op, instruction: u32) {
-        let r = instruction & 0_77_00_00;
+        let r = instruction & 0o77_00_00;
         let r = r >> 12;
-        let u = instruction & 0_00_77_77;
+        let u = instruction & 0o00_77_77;
         match op {
             Op::Let => self.cpu.set(r, u),
             Op::Lethi => {
-                let lo = self.cpu[r] & 0_77_77;
+                let lo = self.cpu[r] & 0o77_77;
                 let u = u << 12;
-                self.cpu.set(r, lo | u)
+                self.cpu.set(r, lo | u);
             }
             _ => unreachable!(),
         }
     }
 
+    /// Execute store/load instruction.
+    /// TODO: Merge into VirtualMachine::i.
     fn m(&mut self, op: Op, instruction: u32) {
-        let r = instruction & 0_77_00_00;
+        let r = instruction & 0o77_00_00;
         let r = r >> 12;
-        let s = instruction & 0_00_77_00;
+        let s = instruction & 0o00_77_00;
         let s = s >> 6;
-        let i = instruction & 0_00_00_77;
+        let i = instruction & 0o00_00_77;
         // let i = ((i as u8) << 2) as i8 as i32;
         let i = (i << 2) as i8 as i32 >> 2;
         use Op::*;
         match op {
             Load => {
-                let address = s as i32 + i;
-                // TODO: Add underflow test.
+                let address = self.cpu[s] as i32 + i;
+                // TODO: Add overflow/underflow test.
                 let value = self.ram[address as usize] as u32;
                 self.cpu.set(r, value)
             }
             Store => {
-                let address = r as i32 + i;
-                // TODO: Add underflow test.
+                let address = self.cpu[r] as i32 + i;
+                // TODO: Add overflow/underflow test.
                 self.ram[address as usize] = self.cpu[s] as u8;
             }
-            _ => unreachable!(),
+            _ => todo!(),
         }
     }
-}
 
-impl Default for VirtualMachine {
-    fn default() -> Self {
-        Self {
-            ram: vec![0; MEMORY_SIZE],
-            audio: vec![0.0; SAMPLES_PER_FRAME],
-            sin_phase: 0.0,
-            video: vec![0; WIDTH * HEIGHT * 4],
-            cpu: Cpu::default(),
+    fn r(&mut self, op: Op, instruction: u32) {
+        let r = instruction & 0o77_00_00;
+        let r = r >> 12;
+        let s = instruction & 0o00_77_00;
+        let s = s >> 6;
+        let s = self.cpu[s];
+        let t = instruction & 0o00_00_77;
+        let t = self.cpu[t];
+        use Op::*;
+        match op {
+            Less => {
+                self.cpu.set(r, (s < t) as u32);
+                self.cpu.condition = s == t;
+            }
+            _ => todo!(),
         }
     }
 }

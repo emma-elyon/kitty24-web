@@ -8,6 +8,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 virtual_machine = { path = "crates/virtual_machine" }
+assembler = { path = "crates/assembler"}
+pest = "2.7.4"
 
 [profile.release]
 lto = true
