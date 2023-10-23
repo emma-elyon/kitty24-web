@@ -2,7 +2,7 @@ use std::ops::Index;
 
 pub const REGISTER_PROGRAM_COUNTER: u32 = 0x0F;
 
-const REGISTER_COUNT: usize = 2_usize.pow(6);
+pub const REGISTER_COUNT: usize = 2_usize.pow(6);
 
 pub struct Cpu {
     pub condition: bool,
@@ -12,6 +12,10 @@ pub struct Cpu {
 impl Cpu {
     pub fn set(&mut self, register: u32, value: u32) {
         self.registers[register as usize] = value;
+    }
+
+    pub fn registers(&self) -> [u32; REGISTER_COUNT] {
+        self.registers
     }
 }
 

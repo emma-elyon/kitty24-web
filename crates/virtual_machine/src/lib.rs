@@ -5,6 +5,8 @@ use std::f32::consts::TAU;
 use common::*;
 use cpu::*;
 
+pub use cpu::REGISTER_COUNT;
+
 const BITS: usize = 24;
 const MEMORY_SIZE: usize = 2_usize.pow(BITS as u32);
 pub const WIDTH: usize = 320;
@@ -45,6 +47,10 @@ impl VirtualMachine {
             video: vec![0; WIDTH * HEIGHT * 4],
             cpu: Cpu::default(),
         }
+    }
+
+    pub fn registers(&self) -> [u32; REGISTER_COUNT] {
+        self.cpu.registers()
     }
 
     /// Run the virtual machine for one frame.
@@ -133,10 +139,17 @@ impl VirtualMachine {
                 let op: Op = op.into();
                 use Op::*;
                 match op {
-                    Let | Lethi => self.l(op, instruction),
-                    Load | Store => self.m(op, instruction),
-                    Ori | Nori | Andi | Xori | Lessi | Addi | Subi => self.i(op, instruction),
-                    Less => self.r(op, instruction),
+                    Shri | Shli | Slessi | Load | Load2 | Load3 | Store | Store2 | Store3 | Ori
+                    | Nori | Andi | Xori | Lessi | Addi | Subi | Muli => {
+                        self.i(op, instruction);
+                    }
+                    Let | Lethi => {
+                        self.l(op, instruction);
+                    }
+                    Ashr | Rol | Shr | Shl | Sless | Or | Nor | And | Xor | Less | Add | Sub
+                    | Mul => {
+                        self.r(op, instruction);
+                    }
                 }
             }
         }
@@ -163,6 +176,67 @@ impl VirtualMachine {
         let u = instruction & 0o00_00_77;
         use Op::*;
         match op {
+            Shri => {
+                self.cpu.set(r, s >> u);
+            }
+            Shli => {
+                self.cpu.set(r, s << u);
+            }
+            Slessi => todo!(),
+            Load => {
+                let i = (u << 2) as i8 as i32 >> 2;
+                let address = s as i32 + i;
+                // TODO: Add overflow/underflow test.
+                let value = self.ram[address as usize] as u32;
+                self.cpu.set(r, value)
+            }
+            Load2 => {
+                let i = (u << 2) as i8 as i32 >> 2;
+                let address = s as i32 + i;
+                // TODO: Add overflow/underflow test.
+                let value = u32::from_be_bytes([
+                    0,
+                    0,
+                    self.ram[address as usize + 0],
+                    self.ram[address as usize + 1],
+                ]);
+                self.cpu.set(r, value)
+            }
+            Load3 => {
+                let i = (u << 2) as i8 as i32 >> 2;
+                let address = s as i32 + i;
+                // TODO: Add overflow/underflow test.
+                let value = u32::from_be_bytes([
+                    0,
+                    self.ram[address as usize + 0],
+                    self.ram[address as usize + 1],
+                    self.ram[address as usize + 2],
+                ]);
+                self.cpu.set(r, value)
+            }
+            Store => {
+                let i = (u << 2) as i8 as i32 >> 2;
+                let address = self.cpu[r] as i32 + i;
+                // TODO: Add overflow/underflow test.
+                self.ram[address as usize] = s as u8;
+            }
+            Store2 => {
+                let i = (u << 2) as i8 as i32 >> 2;
+                let address = self.cpu[r] as i32 + i;
+                // TODO: Add overflow/underflow test.
+                let [_, _, a, b] = s.to_be_bytes();
+                self.ram[address as usize + 0] = a;
+                self.ram[address as usize + 1] = b;
+            }
+            Store3 => {
+                let i = (u << 2) as i8 as i32 >> 2;
+                let address = self.cpu[r] as i32 + i;
+                // TODO: Add overflow/underflow test.
+                let [_, a, b, c] = s.to_be_bytes();
+                self.ram[address as usize + 0] = a;
+                self.ram[address as usize + 1] = b;
+                self.ram[address as usize + 2] = c;
+            }
             Ori => {
                 self.cpu.set(r, s | u);
                 self.cpu.condition = s | u == 0
@@ -191,7 +265,11 @@ impl VirtualMachine {
                 self.cpu.set(r, s - u);
                 self.cpu.condition = 0 > s as i32 - u as i32;
             }
-            _ => todo!("Op: 0o{:o}", op as u32),
+            Muli => {
+                self.cpu.set(r, s * u);
+                self.cpu.condition = 0xFFFFFF < s as u64 * u as u64;
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -211,33 +289,6 @@ impl VirtualMachine {
         }
     }
 
-    /// Execute store/load instruction.
-    /// TODO: Merge into VirtualMachine::i.
-    fn m(&mut self, op: Op, instruction: u32) {
-        let r = instruction & 0o77_00_00;
-        let r = r >> 12;
-        let s = instruction & 0o00_77_00;
-        let s = s >> 6;
-        let i = instruction & 0o00_00_77;
-        // let i = ((i as u8) << 2) as i8 as i32;
-        let i = (i << 2) as i8 as i32 >> 2;
-        use Op::*;
-        match op {
-            Load => {
-                let address = self.cpu[s] as i32 + i;
-                // TODO: Add overflow/underflow test.
-                let value = self.ram[address as usize] as u32;
-                self.cpu.set(r, value)
-            }
-            Store => {
-                let address = self.cpu[r] as i32 + i;
-                // TODO: Add overflow/underflow test.
-                self.ram[address as usize] = self.cpu[s] as u8;
-            }
-            _ => todo!(),
-        }
-    }
-
     fn r(&mut self, op: Op, instruction: u32) {
         let r = instruction & 0o77_00_00;
         let r = r >> 12;
@@ -248,11 +299,53 @@ impl VirtualMachine {
         let t = self.cpu[t];
         use Op::*;
         match op {
+            Ashr => {
+                let s = (s << 8) as i32;
+                let s = s >> t;
+                let s = s as u32 >> 8;
+                self.cpu.set(r, s)
+            }
+            Rol => todo!("This seems hard for u24."),
+            Shr => {
+                self.cpu.set(r, s >> t);
+            }
+            Shl => {
+                self.cpu.set(r, s << t);
+            }
+            Sless => todo!(),
+            Or => {
+                self.cpu.set(r, s | t);
+                self.cpu.condition = s | t == 0
+            }
+            Nor => {
+                self.cpu.set(r, !(s | t));
+                self.cpu.condition = !(s | t) == 0
+            }
+            And => {
+                self.cpu.set(r, s & t);
+                self.cpu.condition = s & t == 0
+            }
+            Xor => {
+                self.cpu.set(r, s ^ t);
+                self.cpu.condition = s ^ t == 0
+            }
             Less => {
                 self.cpu.set(r, (s < t) as u32);
                 self.cpu.condition = s == t;
             }
-            _ => todo!(),
+            Add => {
+                self.cpu.set(r, s + t);
+                self.cpu.condition = 0xFFFFFF < s + t;
+            }
+            Sub => {
+                self.cpu.set(r, s - t);
+                self.cpu.condition = 0 > s as i32 - t as i32;
+            }
+            Mul => {
+                self.cpu.set(r, s * t);
+                self.cpu.condition = 0xFFFFFF < s as u64 * t as u64;
+            }
+            _ => unreachable!(),
         }
     }
 }

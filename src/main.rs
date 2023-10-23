@@ -9,6 +9,7 @@ fn main() {
             for _ in 0..60 {
                 virtual_machine.run();
             }
+            eprintln!("{:#?}", virtual_machine.registers());
         }
         Err(error) => eprintln!("{}", error),
     }

@@ -9,12 +9,40 @@ Instruction = {
 }
 
 OpI = {
-    ^"lessi"
+    ^"shri"
+  | ^"shli"
+  | ^"slessi"
+  | ^"load2"
+  | ^"load3"
+  | ^"load"
+  | ^"store2"
+  | ^"store3"
+  | ^"store"
+  | ^"ori"
+  | ^"nori"
+  | ^"andi"
+  | ^"xori"
+  | ^"lessi"
   | ^"addi"
   | ^"subi"
-  | ^"caddi"
-  | ^"store"
+  | ^"muli"
+  | ^"cshri"
+  | ^"cshli"
+  | ^"cslessi"
+  | ^"cload2"
+  | ^"cload3"
+  | ^"cload"
+  | ^"cstore2"
+  | ^"cstore3"
   | ^"cstore"
+  | ^"cori"
+  | ^"cnori"
+  | ^"candi"
+  | ^"cxori"
+  | ^"clessi"
+  | ^"caddi"
+  | ^"csubi"
+  | ^"cmuli"
 }
 
 OpL = {
@@ -25,18 +53,44 @@ OpL = {
 }
 
 OpR = {
-    ^"less"
+    ^"ashr"
+  | ^"rol"
+  | ^"shr"
+  | ^"shl"
+  | ^"sless"
+  | ^"or"
+  | ^"nor"
+  | ^"and"
+  | ^"xor"
+  | ^"less"
+  | ^"add"
+  | ^"sub"
+  | ^"mul"
+  | ^"cashr"
+  | ^"crol"
+  | ^"cshr"
+  | ^"cshl"
+  | ^"csless"
+  | ^"cor"
+  | ^"cnor"
+  | ^"cand"
+  | ^"cxor"
+  | ^"cless"
+  | ^"cadd"
+  | ^"csub"
+  | ^"cmul"
 }
 
 I = _{ Register ~ "," ~ Register ~ "," ~ Value }
 L = _{ Register ~ "," ~ Value }
 R = _{ Register ~ "," ~ Register ~ "," ~ Register }
 
-Value = _{ Number | LabelReference }
+Value = _{ SignedNumber | Number | LabelReference }
 
-Number      =  { Hexadecimal | Binary | Octal | Decimal }
-Decimal     = @{ "0" | ('1'..'9') ~ ('0'..'9')* }
-Octal       = @{ "0" ~ ('1'..'7') ~ ('0'..'7')* }
+Number       =  { Hexadecimal | Binary | Octal | Decimal }
+SignedNumber = { "-" ~ (Hexadecimal | Binary | Octal | Decimal) }
+Decimal     = @{ ('0'..'9')+ }
+Octal       = @{ ^"0o" ~ ('0'..'7')+ }
 Hexadecimal = @{ ^"0x" ~ ('0'..'9' | 'A'..'F' | 'a'..'f')+ }
 Binary      = @{ ^"0b" ~ ("0" | "1")+ }
 
@@ -51,7 +105,7 @@ AbsoluteLabelReference = { Label }
 LabelDefinition = { Label ~ ":" }
 
 // TODO: Exclude prefix numbers to not collide with integer values.
-Identifier = @{ (!("." | "~" | ":") ~ (ALPHABETIC | NUMBER | SYMBOL))+ }
+Identifier = @{ (!("." | "~" | ":" | ";") ~ (ALPHABETIC | NUMBER | SYMBOL))+ }
 
 Register = {
     ^"pc" // Equivalent to rF

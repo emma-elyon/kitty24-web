@@ -136,13 +136,41 @@ impl Assembler {
     fn parse_immediate(&mut self, op: Pair<Rule>, mut pairs: Pairs<Rule>) {
         use Op::*;
         let (op, conditional) = match op.as_str().to_lowercase().as_str() {
+            "shri" => (Shri, false),
+            "shli" => (Shli, false),
+            "slessi" => (Slessi, false),
+            "load" => (Load, false),
+            "load2" => (Load2, false),
+            "load3" => (Load3, false),
             "store" => (Store, false),
+            "store2" => (Store2, false),
+            "store3" => (Store3, false),
+            "ori" => (Ori, false),
+            "nori" => (Nori, false),
+            "andi" => (Andi, false),
+            "xori" => (Xori, false),
             "lessi" => (Lessi, false),
             "addi" => (Addi, false),
             "subi" => (Subi, false),
+            "muli" => (Muli, false),
+            "cshri" => (Shri, true),
+            "cshli" => (Shli, true),
+            "cslessi" => (Slessi, true),
+            "cload" => (Load, true),
+            "cload2" => (Load2, true),
+            "cload3" => (Load3, true),
             "cstore" => (Store, true),
+            "cstore2" => (Store2, true),
+            "cstore3" => (Store3, true),
+            "cori" => (Ori, true),
+            "cnori" => (Nori, true),
+            "candi" => (Andi, true),
+            "cxori" => (Xori, true),
+            "clessi" => (Lessi, true),
             "caddi" => (Addi, true),
-            _ => todo!(),
+            "csubi" => (Subi, true),
+            "cmuli" => (Muli, true),
+            _ => unreachable!(),
         };
         let conditional = conditional as u32;
         let conditional = conditional << 23;
@@ -194,8 +222,33 @@ impl Assembler {
     fn parse_register_instruction(&mut self, op: Pair<Rule>, mut pairs: Pairs<Rule>) {
         use Op::*;
         let (op, conditional) = match op.as_str().to_lowercase().as_str() {
+            "ashr" => (Ashr, false),
+            "rol" => (Rol, false),
+            "shr" => (Shr, false),
+            "shl" => (Shl, false),
+            "sless" => (Sless, false),
+            "or" => (Or, false),
+            "nor" => (Nor, false),
+            "and" => (And, false),
+            "xor" => (Xor, false),
             "less" => (Less, false),
-            _ => todo!(),
+            "add" => (Add, false),
+            "sub" => (Sub, false),
+            "mul" => (Mul, false),
+            "cashr" => (Ashr, true),
+            "crol" => (Rol, true),
+            "cshr" => (Shr, true),
+            "cshl" => (Shl, true),
+            "csless" => (Sless, true),
+            "cor" => (Or, true),
+            "cnor" => (Nor, true),
+            "cand" => (And, true),
+            "cxor" => (Xor, true),
+            "cless" => (Less, true),
+            "cadd" => (Add, true),
+            "csub" => (Sub, true),
+            "cmul" => (Mul, true),
+            _ => unreachable!(),
         };
         let conditional = conditional as u32;
         let conditional = conditional << 23;
@@ -282,22 +335,36 @@ impl Assembler {
     }
 
     fn parse_value(&mut self, pair: Pair<Rule>, length: u32, shift: u32) -> u32 {
-        match pair.as_rule() {
+        eprintln!("STRIN: {} ({:?})", pair.as_str(), pair.as_rule());
+        let result = match pair.as_rule() {
             Rule::Number => self.parse_number(pair.into_inner().next().unwrap()),
+            Rule::SignedNumber => self.parse_signed_number(pair.into_inner().next().unwrap()),
             Rule::LabelReference => {
                 self.parse_label_reference(pair.into_inner().next().unwrap(), length, shift);
                 0
             }
             _ => todo!("Value: {}", pair.as_str()),
-        }
+        };
+        eprintln!("VALUE: {}", result);
+        result
     }
 
     fn parse_number(&mut self, pair: Pair<Rule>) -> u32 {
         match pair.as_rule() {
             Rule::Binary => u32::from_str_radix(&pair.as_str()[2..], 0b10).unwrap(),
-            Rule::Octal => u32::from_str_radix(&pair.as_str()[1..], 010).unwrap(),
+            Rule::Octal => u32::from_str_radix(&pair.as_str()[2..], 0o10).unwrap(),
             Rule::Decimal => u32::from_str_radix(pair.as_str(), 10).unwrap(),
             Rule::Hexadecimal => u32::from_str_radix(&pair.as_str()[2..], 0x10).unwrap(),
+            _ => unreachable!("Number: {}", pair.as_str()),
+        }
+    }
+
+    fn parse_signed_number(&mut self, pair: Pair<Rule>) -> u32 {
+        match pair.as_rule() {
+            Rule::Binary => -i32::from_str_radix(&pair.as_str()[2..], 0b10).unwrap() as u32,
+            Rule::Octal => -i32::from_str_radix(&pair.as_str()[2..], 0o10).unwrap() as u32,
+            Rule::Decimal => -i32::from_str_radix(pair.as_str(), 10).unwrap() as u32,
+            Rule::Hexadecimal => -i32::from_str_radix(&pair.as_str()[2..], 0x10).unwrap() as u32,
             _ => unreachable!("Number: {}", pair.as_str()),
         }
     }
