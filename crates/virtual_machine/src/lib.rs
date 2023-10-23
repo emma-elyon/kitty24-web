@@ -305,18 +305,36 @@ impl VirtualMachine {
         match op {
             Ashr => {
                 let s = (s << 8) as i32;
-                let s = s >> t;
+                let t = (t << 8) as i32;
+                let s = s >> (t >> 8);
                 let s = s as u32 >> 8;
                 self.cpu.set(r, s)
             }
-            Rol => todo!("This seems hard for u24."),
+            Rol => {
+                let t = (t << 8) as i32 >> 8;
+                let t = t % BITS as i32;
+                // let t = t.abs() % BITS as i32 * t.signum();
+                if t.is_positive() {
+                    let (roll_left, _overflow) = s.overflowing_shl(t as u32);
+                    let (roll_right, _overflow) = (s as i32).overflowing_shr((24 - t) as u32);
+                    self.cpu.set(r, roll_left | roll_right as u32);
+                } else {
+                    let (roll_right, _overflow) = (s as i32).overflowing_shr(-t as u32);
+                    let (roll_left, _overflow) = s.overflowing_shl((24 + t) as u32);
+                    self.cpu.set(r, roll_left | roll_right as u32);
+                }
+            },
             Shr => {
                 self.cpu.set(r, s >> t);
             }
             Shl => {
                 self.cpu.set(r, s << t);
             }
-            Sless => todo!(),
+            Sless => {
+                let u = ((s << 8) as i32) < (t << 8) as i32;
+                self.cpu.set(r, u as u32);
+                self.cpu.condition = s == t;
+            },
             Or => {
                 self.cpu.set(r, s | t);
                 self.cpu.condition = s | t == 0

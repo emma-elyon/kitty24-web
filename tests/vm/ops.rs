@@ -349,6 +349,30 @@ mod slessi_op {
     }
 
     #[test]
+    fn with_less_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            slessi  r0, r1, 48
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
+    fn with_greater_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            slessi  r0, r1, 12
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
     fn conditionally_with_less_is_true() {
         let [_, r1, ..] = run_virtual_machine(
             r"
@@ -619,5 +643,733 @@ mod load3_op {
         ",
         );
         assert_eq!(r1, 0x777);
+    }
+}
+
+mod ashr_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            ashr    r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn with_one_halves() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            let     r2, 1
+            ashr    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn with_eight_demisemihemidemisemiquaverates() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2248
+            let     r2, 8
+            ashr    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_eight_demisemihemidemisemiquaverates() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2248
+            let     r2, 8
+            or      r0, r0, r0
+            cashr   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_eight_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2248
+            let     r2, 8
+            cashr   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 2248);
+    }
+
+    #[test]
+    fn of_negative_eight_quarters() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, -8
+            lethi   r1, -8
+            let     r2, 2
+            ashr    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, ((-8_i32 << 8) >> 2) as u32 >> 8);
+    }
+}
+
+mod rol_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            rol     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn with_twenty_four_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            let     r2, 24
+            rol     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn with_negative_twenty_four_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            let     r2, -24
+            lethi   r2, -24
+            rol     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn with_four_rotates_left() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xABCDEF
+            lethi   r1, 0xABCDEF
+            let     r2, 4
+            rol     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0xBCDEFA);
+    }
+
+    #[test]
+    fn with_negative_four_rotates_right() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xABCDEF
+            lethi   r1, 0xABCDEF
+            let     r2, -4
+            lethi   r2, -4
+            rol     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0xFABCDE);
+    }
+
+    #[test]
+    fn with_fifty_quadruples() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 5
+            let     r2, 50
+            rol     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 20);
+    }
+
+    #[test]
+    fn with_negative_fifty_quarters() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 20
+            let     r2, -50
+            lethi   r2, -50
+            rol     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 5);
+    }
+
+    #[test]
+    fn conditionally_with_four_rotates_left() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xABCDEF
+            lethi   r1, 0xABCDEF
+            let     r2, 4
+            or      r0, r0, r0
+            crol    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0xBCDEFA);
+    }
+
+    #[test]
+    fn conditionally_with_four_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xABCDEF
+            lethi   r1, 0xABCDEF
+            let     r2, 4
+            crol    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0xABCDEF);
+    }
+}
+
+mod shr_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            shr     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn with_one_halves() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            let     r2, 1
+            shr     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn with_eight_demisemihemidemisemiquaverates() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2248
+            let     r2, 8
+            shr     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_eight_demisemihemidemisemiquaverates() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2248
+            or      r0, r0, r0
+            let     r2, 8
+            cshr    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_eight_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2248
+            let     r2, 8
+            cshr    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 2248);
+    }
+}
+
+mod shl_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            shl     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn with_one_doubles() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 17
+            let     r2, 1
+            shl     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 34);
+    }
+
+    #[test]
+    fn with_ten_multiplies_by_1024() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2
+            let     r2, 10
+            shl     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 2048);
+    }
+
+    #[test]
+    fn with_twentythree_truncates_least_to_most_significant_bit() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xABCDEF
+            let     r2, 23
+            shl     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0x800000);
+    }
+
+    #[test]
+    fn with_twentyfour_truncates_to_zero() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFFFF
+            let     r2, 24
+            shl     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn conditionally_with_ten_multiplies_by_1024() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2
+            or      r0, r0, r0
+            let     r2, 10
+            cshl    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 2048);
+    }
+
+    #[test]
+    fn conditionally_with_ten_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 2
+            let     r2, 10
+            cshl    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 2);
+    }
+}
+
+mod sless_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_less_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 32
+            sless   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 1)
+    }
+
+    #[test]
+    fn with_less_than_zero_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, -24
+            lethi   r1, -24
+            sless   r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 1);
+    }
+
+    #[test]
+    fn with_less_than_minus_12_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, -24
+            lethi   r1, -24
+            let     r2, -12
+            lethi   r2, -12
+            sless   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 1);
+    }
+
+    #[test]
+    fn with_equal_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 24
+            sless   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_greater_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 16
+            sless   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_equal_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 24
+            sless   r1, r1, r2
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 32);
+    }
+
+    #[test]
+    fn with_less_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 48
+            sless   r0, r1, r2
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
+    fn with_greater_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 12
+            sless   r0, r1, r2
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
+    fn conditionally_with_less_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            or      r0, r0, r0
+            let     r2, 32
+            csless  r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 1)
+    }
+
+    #[test]
+    fn conditionally_with_less_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 32
+            csless  r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 24)
+    }
+}
+
+mod store_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn stores_in_ram() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 17
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store   r2, r3, 0
+            load    r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn stores_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 17
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store   r2, r3, 1
+            addi    r2, r2, 1
+            load    r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn stores_in_ram_with_negative_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 17
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store   r2, r3, -1
+            subi    r2, r2, 1
+            load    r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn conditionally_stores_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 17
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            or      r0, r0, r0
+            cstore  r2, r3, 1
+            addi    r2, r2, 1
+            load    r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 17);
+    }
+
+    #[test]
+    fn conditionally_does_not_store_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 17
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            cstore  r2, r3, 1
+            addi    r2, r2, 1
+            let     r1, 34
+            load    r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+}
+
+mod store2_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn stores_2_in_ram() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 4097
+            lethi   r3, 4097
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store2  r2, r3, 0
+            load2   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 4097);
+    }
+
+    #[test]
+    fn stores_2_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 4097
+            lethi   r3, 4097
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store2  r2, r3, 2
+            addi    r2, r2, 2
+            load2   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 4097);
+    }
+
+    #[test]
+    fn stores_2_in_ram_with_negative_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 4097
+            lethi   r3, 4097
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store2  r2, r3, -2
+            subi    r2, r2, 2
+            load2   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 4097);
+    }
+
+    #[test]
+    fn conditionally_stores_2_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 4097
+            lethi   r3, 4097
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            or      r0, r0, r0
+            cstore2 r2, r3, 2
+            addi    r2, r2, 2
+            load2   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 4097);
+    }
+
+    #[test]
+    fn conditionally_does_not_load_2_from_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 4097
+            lethi   r3, 4097
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            cstore2 r2, r3, 0
+            subi    r2, r2, 2
+            let     r1, 345
+            load2   r1, r2, 2
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+}
+
+mod store3_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn stores_3_in_ram() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 0x777FFF
+            lethi   r3, 0x777FFF
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store3  r2, r3, 0
+            load3   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn stores_3_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 0x777FFF
+            lethi   r3, 0x777FFF
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store3  r2, r3, 3
+            addi    r2, r2, 3
+            load3   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn stores_3_in_ram_with_negative_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 0x777FFF
+            lethi   r3, 0x777FFF
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            store3  r2, r3, -3
+            subi    r2, r2, 3
+            load3   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn conditionally_stores_3_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 0x777FFF
+            lethi   r3, 0x777FFF
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            or      r0, r0, r0
+            cstore3 r2, r3, 3
+            addi    r2, r2, 3
+            load3   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn conditionally_does_not_store_3_in_ram_with_offset() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r3, 0x777FFF
+            lethi   r3, 0x777FFF
+            let     r2, 0x800000
+            lethi   r2, 0x800000
+            cstore3 r2, r3, 3
+            addi    r2, r2, 3
+            let     r1, 0xFFF777
+            load3   r1, r2, 0
+        ",
+        );
+        assert_eq!(r1, 0);
     }
 }
