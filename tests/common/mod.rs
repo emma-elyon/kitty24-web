@@ -7,7 +7,7 @@ pub fn run_virtual_machine(source: &str) -> [u32; REGISTER_COUNT] {
             let mut vm = VirtualMachine::new(rom);
             vm.run();
             vm.registers()
-        },
-        Err(error) => panic!("{}", error)
+        }
+        Err(error) => panic!("{}", error),
     }
 }

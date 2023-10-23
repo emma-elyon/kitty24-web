@@ -182,7 +182,11 @@ impl VirtualMachine {
             Shli => {
                 self.cpu.set(r, s << u);
             }
-            Slessi => todo!(),
+            Slessi => {
+                let t = ((s << 8) as i32) < (u << 8) as i32;
+                self.cpu.set(r, t as u32);
+                self.cpu.condition = s == u;
+            },
             Load => {
                 let i = (u << 2) as i8 as i32 >> 2;
                 let address = s as i32 + i;
