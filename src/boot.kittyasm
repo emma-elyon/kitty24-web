@@ -27,3 +27,8 @@ clethi  r1, 0xFA0003
 cstore  r1, r7, 0
 caddi   r7, r7, 1
 subi    pc, pc, ~loop
+text:
+    data    "Hello, world~"
+notes:
+    data    67, 69, 73, 80
+.end:

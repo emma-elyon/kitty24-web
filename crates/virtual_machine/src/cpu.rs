@@ -7,7 +7,6 @@ pub const REGISTER_COUNT: usize = 2_usize.pow(6);
 const BITS: usize = 24;
 const MASK: u32 = 2_u32.pow(BITS as u32) - 1;
 
-
 pub struct Cpu {
     pub condition: bool,
     registers: [u32; REGISTER_COUNT],

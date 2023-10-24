@@ -1,6 +1,6 @@
 WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
 COMMENT    = _{ ";" ~ (!"\n" ~ ANY)* ~ "\n" }
-Program    =  { SOI ~ (Instruction | LabelDefinition)* ~ EOI }
+Program    =  { SOI ~ (Instruction | Data | LabelDefinition)* ~ EOI }
 
 Instruction = {
     OpL ~ L
@@ -81,26 +81,45 @@ OpR = {
   | ^"cmul"
 }
 
+Data = { DataInstruction ~ DataValue }
+
+DataInstruction = {
+    ^"data2"
+  | ^"data3"
+  | ^"data"
+}
+
 I = _{ Register ~ "," ~ Register ~ "," ~ Value }
 L = _{ Register ~ "," ~ Value }
 R = _{ Register ~ "," ~ Register ~ "," ~ Register }
 
-Value = _{ SignedNumber | Number | LabelReference }
+Value      = _{ SignedNumber | Number | LabelReference }
+DataValue  = _{ DataValues | String }
+DataValues = { Value ~ ("," ~ Value)* }
 
-Number       =  { Hexadecimal | Binary | Octal | Decimal }
+Number       = { Hexadecimal | Binary | Octal | Decimal }
 SignedNumber = { "-" ~ (Hexadecimal | Binary | Octal | Decimal) }
-Decimal     = @{ ('0'..'9' | "_")+ }
-Octal       = @{ ^"0o" ~ ('0'..'7' | "_")+ }
-Hexadecimal = @{ ^"0x" ~ ('0'..'9' | 'A'..'F' | 'a'..'f' | "_")+ }
-Binary      = @{ ^"0b" ~ ("0" | "1" | "_")+ }
+Decimal      = @{ ('0'..'9' | "_")+ }
+Octal        = @{ ^"0o" ~ ('0'..'7' | "_")+ }
+Hexadecimal  = @{ ^"0x" ~ ('0'..'9' | 'A'..'F' | 'a'..'f' | "_")+ }
+Binary       = @{ ^"0b" ~ ("0" | "1" | "_")+ }
+
+String = ${ "\"" ~ Characters ~ "\"" }
+Characters = @{ Character* }
+Character = {
+    !("\"" | "\\") ~ ANY
+  | "\\" ~ ("\"" | "\\" | "n" | "t")
+}
 
 Label       = _{ GlobalLabel | LocalLabel }
-GlobalLabel = { Identifier }
-LocalLabel  = { "." ~ Identifier }
+GlobalLabel = @{ Identifier }
+LocalLabel  = @{ "." ~ Identifier }
 
-LabelReference         = { RelativeLabelReference | AbsoluteLabelReference }
-RelativeLabelReference = { "~" ~ Label }
-AbsoluteLabelReference = { Label }
+LabelReference         = { RelativeLabelReference | RelativeLabelOffset | AbsoluteLabelReference }
+RelativeLabelReference = ${ "~" ~ (ScopedLabel | LocalLabel) }
+RelativeLabelOffset = ${ GlobalLabel ~ "~" ~ LocalLabel }
+AbsoluteLabelReference = ${ ScopedLabel | LocalLabel }
+ScopedLabel = ${ GlobalLabel ~ LocalLabel? }
 
 LabelDefinition = { Label ~ ":" }
 
@@ -110,22 +129,6 @@ Identifier = @{ (!("." | "~" | ":" | ";") ~ (ALPHABETIC | NUMBER | SYMBOL))+ }
 Register = {
     ^"pc" // Equivalent to rF
 
-  | ^"r0"
-  | ^"r1"
-  | ^"r2"
-  | ^"r3"
-  | ^"r4"
-  | ^"r5"
-  | ^"r6"
-  | ^"r7"
-  | ^"r8"
-  | ^"r9"
-  | ^"ra"
-  | ^"rb"
-  | ^"rc"
-  | ^"rd"
-  | ^"re"
-  | ^"rf"
   | ^"r10"
   | ^"r11"
   | ^"r12"
@@ -174,4 +177,20 @@ Register = {
   | ^"r3d"
   | ^"r3e"
   | ^"r3f"
+  | ^"r0"
+  | ^"r1"
+  | ^"r2"
+  | ^"r3"
+  | ^"r4"
+  | ^"r5"
+  | ^"r6"
+  | ^"r7"
+  | ^"r8"
+  | ^"r9"
+  | ^"ra"
+  | ^"rb"
+  | ^"rc"
+  | ^"rd"
+  | ^"re"
+  | ^"rf"
 }

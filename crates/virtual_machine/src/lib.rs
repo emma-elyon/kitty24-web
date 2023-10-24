@@ -187,7 +187,7 @@ impl VirtualMachine {
                 let t = ((s << 8) as i32) < (u << 8) as i32;
                 self.cpu.set(r, t as u32);
                 self.cpu.condition = s == u;
-            },
+            }
             Load => {
                 let i = (u << 2) as i8 as i32 >> 2;
                 let address = s as i32 + i;
@@ -327,7 +327,7 @@ impl VirtualMachine {
                     let (roll_left, _overflow) = s.overflowing_shl((24 + t) as u32);
                     self.cpu.set(r, roll_left | roll_right as u32);
                 }
-            },
+            }
             Shr => {
                 self.cpu.set(r, s >> t);
             }
@@ -338,7 +338,7 @@ impl VirtualMachine {
                 let u = ((s << 8) as i32) < (t << 8) as i32;
                 self.cpu.set(r, u as u32);
                 self.cpu.condition = s == t;
-            },
+            }
             Or => {
                 self.cpu.set(r, s | t);
                 self.cpu.condition = s | t == 0

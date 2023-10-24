@@ -127,7 +127,6 @@ const onmessage = ({ data: { type, value }}) => {
 const update = vm => then => now => {
 	const elapsed = now - then
 
-
 	if (elapsed > FRAME_INTERVAL) {
 		// New timestamp, but mind overrun to catch up later.
 		then = now - (elapsed % FRAME_INTERVAL)

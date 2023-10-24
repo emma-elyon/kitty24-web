@@ -40,6 +40,7 @@ impl Assembler {
             match statement.as_rule() {
                 Rule::Instruction => self.parse_instruction(statement),
                 Rule::LabelDefinition => self.parse_label_definition(statement),
+                Rule::Data => self.parse_data(statement),
                 Rule::EOI => break,
                 _ => unreachable!(),
             }
@@ -56,9 +57,12 @@ impl Assembler {
                 let u = target;
                 let u = u >> shift;
                 let u = u & mask;
-                let [a, b, c]: [u8; 3] = self.bytes[*address as usize..*address as usize + 2]
+                let [a, b, c]: [u8; 3] = self.bytes[*address as usize..*address as usize + 3]
                     .try_into()
-                    .unwrap();
+                    .expect(&format!(
+                        "LabelReference: {} @ {} + {}",
+                        identifier, address, length
+                    ));
                 let instruction = u32::from_be_bytes([0, a, b, c]);
                 let instruction = instruction | u;
                 let [_, a, b, c] = instruction.to_be_bytes();
@@ -99,6 +103,44 @@ impl Assembler {
         Ok(self.bytes.clone())
     }
 
+    fn parse_data(&mut self, pair: Pair<Rule>) {
+        let mut pairs = pair.into_inner();
+        let instruction = pairs.next().unwrap().as_str();
+        let value = pairs.next().unwrap();
+        match instruction {
+            "data" => self.parse_data_value(value, 1),
+            "data2" => self.parse_data_value(value, 2),
+            "data3" => self.parse_data_value(value, 3),
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_data_value(&mut self, pair: Pair<Rule>, bytes: u32) {
+        match pair.as_rule() {
+            Rule::DataValues => self.parse_data_values(pair.into_inner(), bytes),
+            Rule::String => self.parse_data_string(pair.as_str()),
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_data_values(&mut self, pairs: Pairs<Rule>, bytes: u32) {
+        for pair in pairs {
+            let value = self.parse_value(pair, bytes, 0);
+            let [_, a, b, c] = value.to_be_bytes();
+            match bytes {
+                1 => self.bytes.push(c),
+                2 => self.bytes.extend([b, c]),
+                3 => self.bytes.extend([a, b, c]),
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    fn parse_data_string(&mut self, string: &str) {
+        let string = &string[1..string.len() - 1];
+        self.bytes.extend(string.as_bytes());
+    }
+
     fn parse_label_definition(&mut self, pair: Pair<Rule>) {
         let label = pair.into_inner().next().unwrap();
         match label.as_rule() {
@@ -109,15 +151,15 @@ impl Assembler {
     }
 
     fn add_global_label(&mut self, pair: Pair<Rule>) {
-        let identifier = pair.into_inner().next().unwrap().as_str();
+        let identifier = pair.as_str();
         self.scope = identifier.to_string();
         self.labels
             .insert(identifier.to_string(), self.bytes.len() as u32);
     }
 
     fn add_local_label(&mut self, pair: Pair<Rule>) {
-        let identifier = pair.into_inner().next().unwrap().as_str();
-        let identifier = format!("{}.{}", self.scope, identifier.to_string());
+        let identifier = pair.as_str();
+        let identifier = format!("{}{}", self.scope, identifier.to_string());
         self.labels
             .insert(identifier.to_string(), self.bytes.len() as u32);
     }
@@ -335,18 +377,15 @@ impl Assembler {
     }
 
     fn parse_value(&mut self, pair: Pair<Rule>, length: u32, shift: u32) -> u32 {
-        eprintln!("STRIN: {} ({:?})", pair.as_str(), pair.as_rule());
-        let result = match pair.as_rule() {
+        match pair.as_rule() {
             Rule::Number => self.parse_number(pair.into_inner().next().unwrap()),
             Rule::SignedNumber => self.parse_signed_number(pair.into_inner().next().unwrap()),
             Rule::LabelReference => {
                 self.parse_label_reference(pair.into_inner().next().unwrap(), length, shift);
                 0
             }
-            _ => todo!("Value: {}", pair.as_str()),
-        };
-        eprintln!("VALUE: {}", result);
-        result
+            _ => todo!("Value: {} ({:?})", pair.as_str(), pair.as_rule()),
+        }
     }
 
     fn parse_number(&mut self, pair: Pair<Rule>) -> u32 {
@@ -382,14 +421,14 @@ impl Assembler {
                 length,
                 shift,
             ),
-            _ => unreachable!(),
+            _ => unreachable!("{:?}", pair.as_rule()),
         }
     }
 
     fn parse_relative_label_reference(&mut self, pair: Pair<Rule>, length: u32, shift: u32) {
         match pair.as_rule() {
-            Rule::GlobalLabel => self.parse_relative_global_label_reference(
-                pair.into_inner().next().unwrap(),
+            Rule::ScopedLabel => self.parse_relative_global_label_reference(
+                pair,
                 length,
                 shift,
             ),
@@ -404,8 +443,8 @@ impl Assembler {
 
     fn parse_absolute_label_reference(&mut self, pair: Pair<Rule>, length: u32, shift: u32) {
         match pair.as_rule() {
-            Rule::GlobalLabel => self.parse_absolute_global_label_reference(
-                pair.into_inner().next().unwrap(),
+            Rule::ScopedLabel => self.parse_absolute_global_label_reference(
+                pair,
                 length,
                 shift,
             ),
@@ -414,7 +453,7 @@ impl Assembler {
                 length,
                 shift,
             ),
-            _ => unreachable!(),
+            _ => unreachable!("{:?}", pair.as_rule()),
         }
     }
 
