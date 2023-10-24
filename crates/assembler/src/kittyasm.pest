@@ -121,10 +121,10 @@ RelativeLabelOffset = ${ GlobalLabel ~ "~" ~ LocalLabel }
 AbsoluteLabelReference = ${ ScopedLabel | LocalLabel }
 ScopedLabel = ${ GlobalLabel ~ LocalLabel? }
 
-LabelDefinition = { Label ~ ":" }
+LabelDefinition = ${ Label ~ ":" }
 
 // TODO: Exclude prefix numbers to not collide with integer values.
-Identifier = @{ (!("." | "~" | ":" | ";") ~ (ALPHABETIC | NUMBER | SYMBOL))+ }
+Identifier = @{ (!("." | "~" | ":" | ";" | "\"") ~ (ALPHABETIC | NUMBER | SYMBOL | PUNCTUATION))+ }
 
 Register = {
     ^"pc" // Equivalent to rF

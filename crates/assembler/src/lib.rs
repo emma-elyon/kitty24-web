@@ -24,6 +24,7 @@ pub struct Assembler {
     scope: String,
     relative_references: Vec<LabelReference>,
     absolute_references: Vec<LabelReference>,
+    delta_references: Vec<LabelReference>,
 }
 
 impl Assembler {
@@ -97,7 +98,32 @@ impl Assembler {
                 self.bytes[*address as usize + 1] = b;
                 self.bytes[*address as usize + 2] = c;
             } else {
-                panic!("Unknown label: {}", identifier);
+                panic!("Unknown label: `{}`\n{:#?}", identifier, self.labels);
+            }
+        }
+        for LabelReference {
+            identifier,
+            address,
+            length,
+            shift,
+        } in &self.delta_references
+        {
+            if let Some(&value) = self.labels.get(identifier) {
+                let mask = 2_u32.pow(*length) - 1;
+                let u = value;
+                let u = u >> shift;
+                let u = u & mask;
+                let [a, b, c]: [u8; 3] = self.bytes[*address as usize..*address as usize + 3]
+                    .try_into()
+                    .unwrap();
+                let instruction = u32::from_be_bytes([0, a, b, c]);
+                let instruction = instruction | u;
+                let [_, a, b, c] = instruction.to_be_bytes();
+                self.bytes[*address as usize + 0] = a;
+                self.bytes[*address as usize + 1] = b;
+                self.bytes[*address as usize + 2] = c;
+            } else {
+                panic!("Unknown label: `{}`\n{:#?}", identifier, self.labels);
             }
         }
         Ok(self.bytes.clone())
@@ -160,8 +186,10 @@ impl Assembler {
     fn add_local_label(&mut self, pair: Pair<Rule>) {
         let identifier = pair.as_str();
         let identifier = format!("{}{}", self.scope, identifier.to_string());
-        self.labels
-            .insert(identifier.to_string(), self.bytes.len() as u32);
+        self.labels.insert(identifier, self.bytes.len() as u32);
+        let relative_identifier = format!("{}~{}", self.scope, pair.as_str());
+        let relative_length = self.bytes.len() as u32 - self.labels.get(&self.scope).unwrap();
+        self.labels.insert(relative_identifier, relative_length);
     }
 
     fn parse_instruction(&mut self, pair: Pair<Rule>) {
@@ -416,6 +444,7 @@ impl Assembler {
                 length,
                 shift,
             ),
+            Rule::RelativeLabelOffset => self.parse_relative_label_offset(pair, length, shift),
             Rule::AbsoluteLabelReference => self.parse_absolute_label_reference(
                 pair.into_inner().next().unwrap(),
                 length,
@@ -427,32 +456,27 @@ impl Assembler {
 
     fn parse_relative_label_reference(&mut self, pair: Pair<Rule>, length: u32, shift: u32) {
         match pair.as_rule() {
-            Rule::ScopedLabel => self.parse_relative_global_label_reference(
-                pair,
-                length,
-                shift,
-            ),
-            Rule::LocalLabel => self.parse_relative_local_label_reference(
-                pair.into_inner().next().unwrap(),
-                length,
-                shift,
-            ),
+            Rule::ScopedLabel => self.parse_relative_global_label_reference(pair, length, shift),
+            Rule::LocalLabel => self.parse_relative_local_label_reference(pair, length, shift),
             _ => unreachable!(),
         }
     }
 
+    fn parse_relative_label_offset(&mut self, pair: Pair<Rule>, length: u32, shift: u32) {
+        let identifier = pair.as_str().to_string();
+        let address = self.bytes.len() as u32;
+        self.delta_references.push(LabelReference {
+            identifier,
+            address,
+            length,
+            shift,
+        })
+    }
+
     fn parse_absolute_label_reference(&mut self, pair: Pair<Rule>, length: u32, shift: u32) {
         match pair.as_rule() {
-            Rule::ScopedLabel => self.parse_absolute_global_label_reference(
-                pair,
-                length,
-                shift,
-            ),
-            Rule::LocalLabel => self.parse_absolute_local_label_reference(
-                pair.into_inner().next().unwrap(),
-                length,
-                shift,
-            ),
+            Rule::ScopedLabel => self.parse_absolute_global_label_reference(pair, length, shift),
+            Rule::LocalLabel => self.parse_absolute_local_label_reference(pair, length, shift),
             _ => unreachable!("{:?}", pair.as_rule()),
         }
     }
@@ -481,7 +505,7 @@ impl Assembler {
 
     fn parse_relative_local_label_reference(&mut self, pair: Pair<Rule>, length: u32, shift: u32) {
         let identifier = pair.as_str();
-        let identifier = format!("{}.{}", self.scope, identifier);
+        let identifier = format!("{}{}", self.scope, identifier);
         let address = self.bytes.len() as u32;
         self.relative_references.push(LabelReference {
             identifier,
@@ -493,7 +517,7 @@ impl Assembler {
 
     fn parse_absolute_local_label_reference(&mut self, pair: Pair<Rule>, length: u32, shift: u32) {
         let identifier = pair.as_str();
-        let identifier = format!("{}.{}", self.scope, identifier);
+        let identifier = format!("{}{}", self.scope, identifier);
         let address = self.bytes.len() as u32;
         self.absolute_references.push(LabelReference {
             identifier,
@@ -512,6 +536,7 @@ impl Default for Assembler {
             scope: Default::default(),
             relative_references: Default::default(),
             absolute_references: Default::default(),
+            delta_references: Default::default(),
         }
     }
 }
