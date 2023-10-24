@@ -8,6 +8,7 @@ use cpu::*;
 pub use cpu::REGISTER_COUNT;
 
 const BITS: usize = 24;
+const MASK: usize = 2_usize.pow(BITS as u32) - 1;
 const MEMORY_SIZE: usize = 2_usize.pow(BITS as u32);
 pub const WIDTH: usize = 320;
 pub const HEIGHT: usize = 180;
@@ -247,7 +248,7 @@ impl VirtualMachine {
             }
             Nori => {
                 self.cpu.set(r, !(s | u));
-                self.cpu.condition = !(s | u) == 0
+                self.cpu.condition = !(s | u) & MASK as u32 == 0
             }
             Andi => {
                 self.cpu.set(r, s & u);
@@ -262,16 +263,19 @@ impl VirtualMachine {
                 self.cpu.condition = s == u;
             }
             Addi => {
-                self.cpu.set(r, s + u);
-                self.cpu.condition = 0xFFFFFF < s + u;
+                let (add, overflow) = s.overflowing_add(u);
+                self.cpu.set(r, add);
+                self.cpu.condition = overflow || 0xFFFFFF < s + u;
             }
             Subi => {
-                self.cpu.set(r, s - u);
-                self.cpu.condition = 0 > s as i32 - u as i32;
+                let (sub, overflow) = s.overflowing_sub(u);
+                self.cpu.set(r, sub);
+                self.cpu.condition = overflow || 0 > s as i32 - u as i32;
             }
             Muli => {
-                self.cpu.set(r, s * u);
-                self.cpu.condition = 0xFFFFFF < s as u64 * u as u64;
+                let (mul, overflow) = s.overflowing_mul(u);
+                self.cpu.set(r, mul);
+                self.cpu.condition = overflow || 0xFFFFFF < s as u64 * u as u64;
             }
             _ => unreachable!(),
         }
@@ -341,7 +345,7 @@ impl VirtualMachine {
             }
             Nor => {
                 self.cpu.set(r, !(s | t));
-                self.cpu.condition = !(s | t) == 0
+                self.cpu.condition = !(s | t) & MASK as u32 == 0
             }
             And => {
                 self.cpu.set(r, s & t);
@@ -356,16 +360,19 @@ impl VirtualMachine {
                 self.cpu.condition = s == t;
             }
             Add => {
-                self.cpu.set(r, s + t);
-                self.cpu.condition = 0xFFFFFF < s + t;
+                let (add, overflow) = s.overflowing_add(t);
+                self.cpu.set(r, add);
+                self.cpu.condition = overflow || 0xFFFFFF < s + t;
             }
             Sub => {
-                self.cpu.set(r, s - t);
-                self.cpu.condition = 0 > s as i32 - t as i32;
+                let (sub, overflow) = s.overflowing_sub(t);
+                self.cpu.set(r, sub);
+                self.cpu.condition = overflow || 0 > s as i32 - t as i32;
             }
             Mul => {
-                self.cpu.set(r, s * t);
-                self.cpu.condition = 0xFFFFFF < s as u64 * t as u64;
+                let (mul, overflow) = s.overflowing_mul(t);
+                self.cpu.set(r, mul);
+                self.cpu.condition = overflow || 0xFFFFFF < s as u64 * t as u64;
             }
             _ => unreachable!(),
         }

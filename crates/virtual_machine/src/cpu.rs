@@ -36,6 +36,7 @@ impl Index<u32> for Cpu {
     type Output = u32;
 
     fn index(&self, index: u32) -> &Self::Output {
+        // TODO: Determine if we even need r0 to be a constant zero
         if index == 0 {
             &0
         } else {

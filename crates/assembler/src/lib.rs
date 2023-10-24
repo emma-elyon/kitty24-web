@@ -350,11 +350,12 @@ impl Assembler {
     }
 
     fn parse_number(&mut self, pair: Pair<Rule>) -> u32 {
+        let string = pair.as_str().replace("_", "");
         match pair.as_rule() {
-            Rule::Binary => u32::from_str_radix(&pair.as_str()[2..], 0b10).unwrap(),
-            Rule::Octal => u32::from_str_radix(&pair.as_str()[2..], 0o10).unwrap(),
-            Rule::Decimal => u32::from_str_radix(pair.as_str(), 10).unwrap(),
-            Rule::Hexadecimal => u32::from_str_radix(&pair.as_str()[2..], 0x10).unwrap(),
+            Rule::Binary => u32::from_str_radix(&string[2..], 0b10).unwrap(),
+            Rule::Octal => u32::from_str_radix(&string[2..], 0o10).unwrap(),
+            Rule::Decimal => u32::from_str_radix(&string, 10).unwrap(),
+            Rule::Hexadecimal => u32::from_str_radix(&string[2..], 0x10).unwrap(),
             _ => unreachable!("Number: {}", pair.as_str()),
         }
     }

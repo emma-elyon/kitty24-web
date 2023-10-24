@@ -1373,3 +1373,1316 @@ mod store3_op {
         assert_eq!(r1, 0);
     }
 }
+
+mod ori_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            ori     r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn with_0o77_sets_all() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            ori     r1, r1, 0o77
+        ",
+        );
+        assert_eq!(r1, 0o77);
+    }
+
+    #[test]
+    fn with_fifteen_sets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            ori     r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10101111);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_sets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            or      r0, r0, r0
+            cori    r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10101111);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            cori    r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_zero_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 34
+            ori     r0, r0, 0
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod nori_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_negates() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010_10101010_10101010
+            lethi   r1, 0b10101010_10101010_10101010
+            nori    r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0b01010101_01010101_01010101);
+    }
+
+    #[test]
+    fn with_0o77_unsets_all() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0o77770000
+            lethi   r1, 0o77770000
+            nori    r1, r1, 0o77
+        ",
+        );
+        assert_eq!(r1, 0o7700);
+    }
+
+    #[test]
+    fn with_fifteen_unsets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            nori    r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b11111111_11111111_01010000);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_sets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            or      r0, r0, r0
+            cnori   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b11111111_11111111_01010000);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            cnori   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_0xffffff_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFFF0
+            lethi   r1, 0xFFFFF0
+            nori    r1, r1, 0xF
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod andi_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_zeroes() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0o77777777
+            lethi   r1, 0o77777777
+            andi    r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_0o77_keeps_all() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFF5D
+            lethi   r1, 0xFFFF5D
+            andi    r1, r1, 0o77
+        ",
+        );
+        assert_eq!(r1, 0xFFFF5D & 0o77);
+    }
+
+    #[test]
+    fn with_fifteen_keeps_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            andi     r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b00001010);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_keeps_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            or      r0, r0, r0
+            candi   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b00001010);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            candi   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_zero_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 34
+            andi    r0, r0, 0
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod xori_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xABCDEF
+            lethi   r1, 0xABCDEF
+            xori    r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0xABCDEF);
+    }
+
+    #[test]
+    fn with_0o77_flips_first_six() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            xori    r1, r1, 0o77
+        ",
+        );
+        assert_eq!(r1, 0b10010101);
+    }
+
+    #[test]
+    fn with_fifteen_flips_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            xori    r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10100101);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_keeps_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            or      r0, r0, r0
+            cxori   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10100101);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            cxori   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_equal_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 34
+            xori    r0, r1, 34
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod lessi_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_less_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            lessi  r1, r1, 32
+        ",
+        );
+        assert_eq!(r1, 1)
+    }
+
+    #[test]
+    fn with_less_than_zero_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, -24
+            lethi   r1, -24
+            lessi   r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_less_than_zero_is_false_for_large_number() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFFFF
+            lethi   r1, 0xFFFFFF
+            lessi   r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_equal_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            lessi   r1, r1, 24
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_greater_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            lessi   r1, r1, 16
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_equal_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            lessi   r1, r1, 24
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 32);
+    }
+
+    #[test]
+    fn with_less_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            lessi   r0, r1, 48
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
+    fn with_greater_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            lessi   r0, r1, 12
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
+    fn conditionally_with_less_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            or      r0, r0, r0
+            clessi  r1, r1, 32
+        ",
+        );
+        assert_eq!(r1, 1)
+    }
+
+    #[test]
+    fn conditionally_with_less_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            clessi  r1, r1, 32
+        ",
+        );
+        assert_eq!(r1, 24)
+    }
+}
+
+mod addi_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            addi    r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn with_0o77_adds_63() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            addi    r1, r1, 0o77
+        ",
+        );
+        assert_eq!(r1, 86);
+    }
+
+    #[test]
+    fn with_fifteen_adds_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            addi    r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 38);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_adds_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            or      r0, r0, r0
+            caddi   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 38);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            caddi   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 23);
+    }
+
+    #[test]
+    fn with_overflow_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFFFF
+            lethi   r1, 0xFFFFFF
+            addi    r0, r1, 1
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod subi_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            subi    r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn with_0o77_subtracts_63() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            subi    r1, r1, 0o77
+        ",
+        );
+        assert_eq!(r1, (23 - 63) as u32 & 0xFFFFFF);
+    }
+
+    #[test]
+    fn with_fifteen_subtracts_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            subi    r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_subtracts_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            or      r0, r0, r0
+            csubi   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            csubi   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 23);
+    }
+
+    #[test]
+    fn with_underflow_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0
+            subi    r0, r1, 1
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod muli_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_zeroes() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            muli    r1, r1, 0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_0o77_multiplies_by_63() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            muli    r1, r1, 0o77
+        ",
+        );
+        assert_eq!(r1, 23 * 63);
+    }
+
+    #[test]
+    fn with_fifteen_multiplies_by_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            muli    r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 23 * 15);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_multiplies_by_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            or      r0, r0, r0
+            cmuli   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 23 * 15);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            cmuli   r1, r1, 15
+        ",
+        );
+        assert_eq!(r1, 23);
+    }
+
+    #[test]
+    fn with_overflow_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x100000
+            lethi   r1, 0x100000
+            muli    r0, r1, 16
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod or_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            or      r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn with_0o77_sets_all() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 0o77
+            or      r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0o77);
+    }
+
+    #[test]
+    fn with_fifteen_sets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            or      r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10101111);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_sets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            or      r0, r0, r0
+            let     r2, 15
+            cor     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10101111);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            cor     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_zero_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 34
+            or      r0, r0, r0
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod nor_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_negates() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010_10101010_10101010
+            lethi   r1, 0b10101010_10101010_10101010
+            nor     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0b01010101_01010101_01010101);
+    }
+
+    #[test]
+    fn with_0o77_unsets_all() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0o77770000
+            lethi   r1, 0o77770000
+            let     r2, 0o77
+            nor     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0o7700);
+    }
+
+    #[test]
+    fn with_fifteen_unsets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            nor     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b11111111_11111111_01010000);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_sets_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            or      r0, r0, r0
+            cnor    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b11111111_11111111_01010000);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            cnor    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_0xffffff_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFFF0
+            lethi   r1, 0xFFFFF0
+            let     r2, 0xF
+            nor     r1, r1, r2
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod and_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_zeroes() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0o77777777
+            lethi   r1, 0o77777777
+            and     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_0o77_keeps_all() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFF5D
+            lethi   r1, 0xFFFF5D
+            let     r2, 0o77
+            and     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0xFFFF5D & 0o77);
+    }
+
+    #[test]
+    fn with_fifteen_keeps_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            and     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b00001010);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_keeps_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            or      r0, r0, r0
+            let     r2, 15
+            cand    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b00001010);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            cand    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_zero_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 34
+            and     r0, r0, r0
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod xor_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xABCDEF
+            lethi   r1, 0xABCDEF
+            xor     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0xABCDEF);
+    }
+
+    #[test]
+    fn with_0o77_flips_first_six() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 0o77
+            xor     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10010101);
+    }
+
+    #[test]
+    fn with_fifteen_flips_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            xor     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10100101);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_keeps_first_four() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            or      r0, r0, r0
+            let     r2, 15
+            cxor    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10100101);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0b10101010
+            let     r2, 15
+            cxor    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0b10101010);
+    }
+
+    #[test]
+    fn with_equal_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 34
+            let     r2, 34
+            xor     r0, r1, r2
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod less_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_less_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 32
+            less    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 1)
+    }
+
+    #[test]
+    fn with_less_than_zero_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, -24
+            lethi   r1, -24
+            less    r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_less_than_zero_is_false_for_large_number() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFFFF
+            lethi   r1, 0xFFFFFF
+            less    r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_equal_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 24
+            less    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_greater_is_false() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 16
+            less    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_equal_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 24
+            less    r1, r1, r2
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 32);
+    }
+
+    #[test]
+    fn with_less_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 48
+            less    r0, r1, r2
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
+    fn with_greater_does_not_set_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 12
+            less    r0, r1, r2
+            clet    r1, 32
+        ",
+        );
+        assert_eq!(r1, 24);
+    }
+
+    #[test]
+    fn conditionally_with_less_is_true() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            or      r0, r0, r0
+            let     r2, 32
+            cless   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 1)
+    }
+
+    #[test]
+    fn conditionally_with_less_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 24
+            let     r2, 32
+            cless   r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 24)
+    }
+}
+
+mod add_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            add     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn with_0o77_adds_63() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 0o77
+            add     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 86);
+    }
+
+    #[test]
+    fn with_fifteen_adds_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 15
+            add     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 38);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_adds_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            or      r0, r0, r0
+            let     r2, 15
+            cadd    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 38);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 15
+            cadd    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 23);
+    }
+
+    #[test]
+    fn with_overflow_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0xFFFFFF
+            lethi   r1, 0xFFFFFF
+            let     r2, 1
+            add     r0, r1, r2
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod sub_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_changes_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            sub     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0x777FFF);
+    }
+
+    #[test]
+    fn with_0o77_subtracts_63() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 0o77
+            sub     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, (23 - 63) as u32 & 0xFFFFFF);
+    }
+
+    #[test]
+    fn with_fifteen_subtracts_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 15
+            sub     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_subtracts_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            or      r0, r0, r0
+            let     r2, 15
+            csub    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 8);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 15
+            csub    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 23);
+    }
+
+    #[test]
+    fn with_underflow_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0
+            let     r2, 1
+            sub     r0, r1, r2
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
+
+mod mul_op {
+    use crate::common::run_virtual_machine;
+
+    #[test]
+    fn with_zero_zeroes() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x777FFF
+            lethi   r1, 0x777FFF
+            mul     r1, r1, r0
+        ",
+        );
+        assert_eq!(r1, 0);
+    }
+
+    #[test]
+    fn with_0o77_multiplies_by_63() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 0o77
+            mul     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 23 * 63);
+    }
+
+    #[test]
+    fn with_fifteen_multiplies_by_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 15
+            mul     r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 23 * 15);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_multiplies_by_15() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            or      r0, r0, r0
+            let     r2, 15
+            cmul    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 23 * 15);
+    }
+
+    #[test]
+    fn conditionally_with_fifteen_does_nothing() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 23
+            let     r2, 15
+            cmul    r1, r1, r2
+        ",
+        );
+        assert_eq!(r1, 23);
+    }
+
+    #[test]
+    fn with_overflow_sets_condition() {
+        let [_, r1, ..] = run_virtual_machine(
+            r"
+            let     r1, 0x100000
+            lethi   r1, 0x100000
+            let     r2, 16
+            mul     r0, r1, r2
+            clet    r1, 17
+        ",
+        );
+        assert_eq!(r1, 17)
+    }
+}
