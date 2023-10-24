@@ -24,7 +24,7 @@ class AudioProcessor extends AudioWorkletProcessor {
 			this.length -= requestedLength
 			this.port.postMessage({
 				"type": "skew",
-				"value": this.length - 1600
+				"value": this.length - 2400
 			})
 		} else {
 			output.forEach(channel => {

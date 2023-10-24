@@ -177,7 +177,7 @@ const update = vm => then => now => {
 		videoContext.drawArrays(videoContext.TRIANGLE_STRIP, 0, 4)
 
 		// Update audio context with samples if we're not too far ahead.
-		if (skew < 1600 && audioContext.state == "running") {
+		if (skew < 2400 && audioContext.state == "running") {
 			const value = audioBuffer.slice()
 			graph.width = value.length
 			graph.height = 256
