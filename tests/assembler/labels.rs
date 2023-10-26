@@ -193,6 +193,9 @@ mod scoped_relative {
         );
         assert_eq!(r1, 17);
         assert_eq!(r2, 34);
-        assert_eq!(String::from_utf8(r3.to_be_bytes()[1..].to_vec()).unwrap(), "owo");
+        assert_eq!(
+            String::from_utf8(r3.to_be_bytes()[1..].to_vec()).unwrap(),
+            "owo"
+        );
     }
 }

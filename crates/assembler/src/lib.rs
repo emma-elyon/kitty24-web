@@ -58,6 +58,7 @@ impl Assembler {
                 let u = target;
                 let u = u >> shift;
                 let u = u & mask;
+                // TODO: Don't panic, instead return Err(string)
                 let [a, b, c]: [u8; 3] = self.bytes[*address as usize..*address as usize + 3]
                     .try_into()
                     .expect(&format!(
@@ -71,7 +72,10 @@ impl Assembler {
                 self.bytes[*address as usize + 1] = b;
                 self.bytes[*address as usize + 2] = c;
             } else {
-                panic!("Unknown label: {}", identifier);
+                return Err(format!(
+                    "Unknown label: `{}`\n{:#?}",
+                    identifier, self.labels
+                ));
             }
         }
         for LabelReference {
@@ -98,7 +102,10 @@ impl Assembler {
                 self.bytes[*address as usize + 1] = b;
                 self.bytes[*address as usize + 2] = c;
             } else {
-                panic!("Unknown label: `{}`\n{:#?}", identifier, self.labels);
+                return Err(format!(
+                    "Unknown label: `{}`\n{:#?}",
+                    identifier, self.labels
+                ));
             }
         }
         for LabelReference {
@@ -123,7 +130,10 @@ impl Assembler {
                 self.bytes[*address as usize + 1] = b;
                 self.bytes[*address as usize + 2] = c;
             } else {
-                panic!("Unknown label: `{}`\n{:#?}", identifier, self.labels);
+                return Err(format!(
+                    "Unknown label: `{}`\n{:#?}",
+                    identifier, self.labels
+                ));
             }
         }
         Ok(self.bytes.clone())

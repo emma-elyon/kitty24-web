@@ -2008,6 +2008,8 @@ mod muli_op {
         );
         assert_eq!(r1, 17)
     }
+
+    fn _with_negative_one_negates() {}
 }
 
 mod or_op {

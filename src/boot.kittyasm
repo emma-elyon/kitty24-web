@@ -1,34 +1,75 @@
-let     r4, 0
-let     r1, 0xFA0003
-lethi   r1, 0xFA0003
-let     r7, 57
-store   r1, r7, 0
-let     r5, 128
-let     r6, 0
-loop:
-    let     r1, 0xFB0000
-    lethi   r1, 0xFB0000
-    addi    r2, r4, 0
-    let     r3, 0x00E100
-    lethi   r3, 0x00E100
-    .fill:
-        store   r1, r2, 0
-        addi    r1, r1, 1
-        addi    r2, r2, 1
-        less    r0, r2, r3
-        caddi   pc, pc, ~.end
-        subi    pc, pc, ~.fill
+let     r1B, 0xFB0000
+lethi   r1B, 0xFB0000
+let     r1C, 0x00E0FF
+lethi   r1C, 0x00E0FF
+let     r5, 0
+fillscreen:
+    add     r1D, r1B, r1C
+    store   r1D, r5, 0
+    addi    r5, r5, 1
+    subi    r1C, r1C, 1
+    caddi   pc, pc, ~.end
+    subi    pc, pc, ~fillscreen
 .end:
-addi    r4, r4, 1
-less    r0, r4, r5
-clet    r4, 0
-clet    r1, 0xFA0003
-clethi  r1, 0xFA0003
-cstore  r1, r7, 0
-caddi   r7, r7, 1
-subi    pc, pc, ~loop
-text:
-    data    "Hello, world~"
-notes:
-    data    67, 69, 73, 80
+
+let     r1, 64
+let     r2, 36
+let     r3, 20
+let     r4, 10
+let     r5, 5
+let     r10, set
+lethi   r10, set
+let     rA, here
+lethi   rA, here
+ori     pc, r10, 0
+here:
+let     r1B, 0xFC0000
+lethi   r1B, 0xFC0000
+let     rA, main
+lethi   rA, main
+let     r3, 40
+let     r4, 20
+let     r5, 6
+ori     pc, r10, 0
+
+
+
+; set(r1 = width, r2 = height, r3 = x, r4 = y, r5 = color)
+set:
+    let     r17, 320   ; framebuffer increment
+    mul     r1A, r4, r17
+    add     r1C, r1B, r3
+    add     r1C, r1C, r1A
+    ori     r14, r1C, 0 ; temporary framebuffer index
+    subi    r15, r1, 1 ; temporary width counter for underflow
+    subi    r16, r2, 1 ; temporary height counter for underflow
+    sub     r17, r17, r1 ; framebuffer increment after setting `width` pixels
+    .loop:
+        store   r14, r5, 0
+        addi    r14, r14, 1
+        subi    r15, r15, 1
+        caddi   pc, pc, ~.next_line
+        subi    pc, pc, ~.loop
+        .next_line:
+            subi    r16, r16, 1
+            caddi   pc, pc, ~.end
+            add     r14, r14, r17
+            subi    r15, r1, 1
+            subi    pc, pc, ~.loop
 .end:
+ori     pc, rA, 0
+
+main:
+    let     r11, 0
+    let     r10, 0xFA0003
+    lethi   r10, 0xFA0003
+    .loop:
+        store2  r10, r11, 0
+        addi    r11, r11, 1
+        let     r12, 800
+        .inner:
+            subi    r12, r12, 1
+            caddi   pc, pc, ~.end
+            subi    pc, pc, ~.inner
+        .end:
+        subi    pc, pc, ~.loop

@@ -109,18 +109,28 @@ const onmessage = ({ data: { type, value }}) => {
 	kitty24 = exports
 
 	// Assign global variables for interacting with the virtual machine.
-	let virtualMachine = kitty24.virtual_machine()
-	let audioOffset = kitty24.audio(virtualMachine)
-	let videoOffset = kitty24.video(virtualMachine)
+	const virtualMachine = kitty24.virtual_machine()
+	const audioOffset = kitty24.audio(virtualMachine)
+	const videoOffset = kitty24.video(virtualMachine)
 
-	// Initialize global audio and video memory buffer views once.
-	audioBuffer = new Float32Array(kitty24.memory.buffer, audioOffset, SAMPLE_RATE / FRAME_RATE)
-	videoBuffer = new Uint8ClampedArray(kitty24.memory.buffer, videoOffset, WIDTH * HEIGHT * 4)
+	const errorOffset = kitty24.error(virtualMachine)
+	const errorLength = kitty24.error_message(virtualMachine)
+	if (errorLength == 0) {
+		// Initialize global audio and video memory buffer views once.
+		audioBuffer = new Float32Array(kitty24.memory.buffer, audioOffset, SAMPLE_RATE / FRAME_RATE)
+		videoBuffer = new Uint8ClampedArray(kitty24.memory.buffer, videoOffset, WIDTH * HEIGHT * 4)
 
-	// Kick off the update loop.
-	let then = performance.now()
-	startTime = then
-	requestAnimationFrame(update(virtualMachine)(then))
+		// Kick off the update loop.
+		const then = performance.now()
+		startTime = then
+		requestAnimationFrame(update(virtualMachine)(then))
+	} else {
+		// Log error if it is non-zero.
+		const bytes = new Uint8Array(kitty24.memory.buffer, errorOffset, errorLength);
+		const string = new TextDecoder().decode(bytes)
+		console.error("ERROR", string)
+	}
+
 })()
 
 // Update every hardware frame (only step and render every FRAME_INTERVAL).
