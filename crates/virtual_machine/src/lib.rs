@@ -181,7 +181,7 @@ impl VirtualMachine {
         let increment = frequency * INCREMENT;
         self.sin_phase += increment;
         self.sin_phase %= TAU;
-        self.audio[sample_index] = 0.125 * self.sin_phase.sin().signum();
+        self.audio[sample_index] = 0.125 * (self.sin_phase - TAU / 2.0).signum();
     }
 
     /// Execute immediate instruction.

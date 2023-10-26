@@ -192,12 +192,21 @@ const update = vm => then => now => {
 			graph.height = 256
 			graphContext.strokeStyle = "red"
 			graphContext.beginPath()
+			let x = -1
+			let prev = 0.0
+			let start = false
 			value.forEach((value, index) => {
-				if (index === 0) {
-					graphContext.moveTo(index, (value * 0.5 + 0.5) * 255)
-				} else {
-					graphContext.lineTo(index, (value * 0.5 + 0.5) * 255)
+				if (x < 0 && prev < 0.0 && value > 0.0) {
+					x = 0
 				}
+				if (x == 0) {
+					graphContext.moveTo(x, (value * 0.5 + 0.5) * 255)
+					x += 1
+				} else if (x > 0 && x < 512) {
+					graphContext.lineTo(x, (value * 0.5 + 0.5) * 255)
+					x += 1
+				}
+				prev = value
 			})
 			graphContext.stroke()
 			node.port.postMessage({
