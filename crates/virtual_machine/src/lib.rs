@@ -7,7 +7,7 @@ use common::*;
 use cpu::*;
 
 pub use cpu::REGISTER_COUNT;
-use io::{BACKGROUND_BUFFER, BACKGROUND_COVER_BUFFER};
+use io::FRAMEBUFFER;
 
 const BITS: usize = 24;
 const MASK: usize = 2_usize.pow(BITS as u32) - 1;
@@ -36,7 +36,6 @@ pub struct VirtualMachine {
     sin_phase: f32,
     pub video: Vec<u8>,
     cpu: Cpu,
-    system_palette: [[u8; 3]; 16],
     pub error_message: Vec<u8>,
 }
 
@@ -51,24 +50,6 @@ impl VirtualMachine {
             sin_phase: 0.0,
             video: vec![0; WIDTH * HEIGHT * 4],
             cpu: Cpu::default(),
-            system_palette: [
-                [0x1a, 0x1c, 0x2c],
-                [0x5d, 0x27, 0x5d],
-                [0xb1, 0x3e, 0x53],
-                [0xef, 0x7d, 0x57],
-                [0xff, 0xcd, 0x75],
-                [0xa7, 0x1c, 0x2c],
-                [0x38, 0xb7, 0x64],
-                [0x25, 0x71, 0x79],
-                [0x29, 0x36, 0x6f],
-                [0x3b, 0x5d, 0xc9],
-                [0x41, 0xa6, 0xf6],
-                [0x73, 0xef, 0xf7],
-                [0xf4, 0xf4, 0xf4],
-                [0x94, 0xb0, 0xc2],
-                [0x56, 0x6c, 0x86],
-                [0x33, 0x3c, 0x57],
-            ],
             error_message: vec![],
         }
     }
@@ -82,24 +63,6 @@ impl VirtualMachine {
             sin_phase: 0.0,
             video: vec![0; WIDTH * HEIGHT * 4],
             cpu: Cpu::default(),
-            system_palette: [
-                [0x1a, 0x1c, 0x2c],
-                [0x5d, 0x27, 0x5d],
-                [0xb1, 0x3e, 0x53],
-                [0xef, 0x7d, 0x57],
-                [0xff, 0xcd, 0x75],
-                [0xa7, 0x1c, 0x2c],
-                [0x38, 0xb7, 0x64],
-                [0x25, 0x71, 0x79],
-                [0x29, 0x36, 0x6f],
-                [0x3b, 0x5d, 0xc9],
-                [0x41, 0xa6, 0xf6],
-                [0x73, 0xef, 0xf7],
-                [0xf4, 0xf4, 0xf4],
-                [0x94, 0xb0, 0xc2],
-                [0x56, 0x6c, 0x86],
-                [0x33, 0x3c, 0x57],
-            ],
             error_message,
         }
     }
@@ -116,39 +79,11 @@ impl VirtualMachine {
                 self.step(CYCLES_PER_PIXEL);
                 // This is a video cycle, update the pixel.
                 let color_index = (x + y * WIDTH) * 4;
-                let ram_index = BACKGROUND_BUFFER + x + y * WIDTH;
-                let palette_index = self.ram[ram_index] % self.system_palette.len() as u8; // TODO: Optimize?
-                let background = self.system_palette[palette_index as usize];
-                let ram_index = BACKGROUND_COVER_BUFFER + x + y * WIDTH;
-                let palette_index = self.ram[ram_index] % self.system_palette.len() as u8; // TODO: Optimize?
-                let background_cover = self.system_palette[palette_index as usize];
-                // Average
-                // let color = [
-                //     if palette_index == 0 { background[0] } else { ((background[0] as u16 + background_cover[0] as u16) >> 1) as u8 },
-                //     if palette_index == 0 { background[1] } else { ((background[1] as u16 + background_cover[1] as u16) >> 1) as u8 },
-                //     if palette_index == 0 { background[2] } else { ((background[2] as u16 + background_cover[2] as u16) >> 1) as u8 },
-                // ];
-                let color = [
-                    if palette_index == 0 {
-                        background[0]
-                    } else {
-                        background[0].saturating_add(background_cover[0])
-                    },
-                    if palette_index == 0 {
-                        background[1]
-                    } else {
-                        background[1].saturating_add(background_cover[1])
-                    },
-                    if palette_index == 0 {
-                        background[2]
-                    } else {
-                        background[2].saturating_add(background_cover[2])
-                    },
-                ];
-                self.video[color_index + 0] = color[0];
-                self.video[color_index + 1] = color[1];
-                self.video[color_index + 2] = color[2];
-                self.video[color_index + 3] = 255;
+                let ram_index = FRAMEBUFFER + color_index;
+                self.video[color_index + 0] = self.ram[ram_index + 0];
+                self.video[color_index + 1] = self.ram[ram_index + 1];
+                self.video[color_index + 2] = self.ram[ram_index + 2];
+                self.video[color_index + 3] = self.ram[ram_index + 3];
                 let cycle = cycle + x * CYCLES_PER_PIXEL;
                 if cycle % CYCLES_PER_SAMPLE == 0 {
                     // This is an audio cycle as well, update the sample.
@@ -246,7 +181,7 @@ impl VirtualMachine {
         let increment = frequency * INCREMENT;
         self.sin_phase += increment;
         self.sin_phase %= TAU;
-        self.audio[sample_index] = 0.25 * self.sin_phase.sin().signum();
+        self.audio[sample_index] = 0.125 * self.sin_phase.sin().signum();
     }
 
     /// Execute immediate instruction.
