@@ -4,7 +4,7 @@ lethi   r30, 0xFA0003
 
 let     r0, 0 ; cycle counter
 let     r1, 0 ; note_index
-let     r2, 11 ; note_count
+let     r2, notes~.length ; note_count
 let     r3, notes
 lethi   r3, notes
 
@@ -20,7 +20,7 @@ main:
         lethi   r0, 4096000
         let     r4, 0
         add     r12, r3, r1
-        load    r10, r12, notes~.frequency
+        load    r10, r12, notes~.midi
         load    r11, r12, notes~.duration
         store   r30, r10, 0
         mul     r0, r0, r11
@@ -30,7 +30,8 @@ main:
         subi    pc, pc, ~main
 
 notes:
-    .frequency:
+    .midi:
         data    60, 67, 71, 67, 72, 71, 69, 67, 69, 71, 67
+    .length:
     .duration:
-        data     2,  2,  3,  1,  1,  1,  1,  1,  1, 1, 2
+        data     2,  2,  3,  1,  1,  1,  1,  1,  1,  1,  2

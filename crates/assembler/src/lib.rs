@@ -73,7 +73,7 @@ impl Assembler {
                 self.bytes[*address as usize + 2] = c;
             } else {
                 return Err(format!(
-                    "Unknown label: `{}`\n{:#?}",
+                    "Unknown label: `{}` in\n{:#?}",
                     identifier, self.labels
                 ));
             }
@@ -103,7 +103,7 @@ impl Assembler {
                 self.bytes[*address as usize + 2] = c;
             } else {
                 return Err(format!(
-                    "Unknown label: `{}`\n{:#?}",
+                    "Unknown label: `{}` in\n{:#?}",
                     identifier, self.labels
                 ));
             }
@@ -131,7 +131,7 @@ impl Assembler {
                 self.bytes[*address as usize + 2] = c;
             } else {
                 return Err(format!(
-                    "Unknown label: `{}`\n{:#?}",
+                    "Unknown label: `{}` in\n{:#?}",
                     identifier, self.labels
                 ));
             }

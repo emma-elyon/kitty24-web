@@ -195,7 +195,7 @@ const update = vm => then => now => {
 			let x = -1
 			let prev = 0.0
 			let start = false
-			value.forEach((value, index) => {
+			value.forEach(value => {
 				if (x < 0 && prev < 0.0 && value > 0.0) {
 					x = 0
 				}
