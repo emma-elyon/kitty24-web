@@ -36,7 +36,7 @@ play:
         store   r30, r10, 0
         mul     r28, r28, r11
         addi    r1, r1, 1
-        less    r3F, r1, r2
+        less    r3D, r1, r2
         clet    r1, 0
         subi    pc, pc, ~play
 

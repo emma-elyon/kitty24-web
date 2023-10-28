@@ -127,7 +127,9 @@ LabelDefinition = ${ Label ~ ":" }
 Identifier = @{ (!("." | "~" | ":" | ";" | "\"") ~ (ALPHABETIC | NUMBER | SYMBOL | PUNCTUATION))+ }
 
 Register = {
-    ^"pc" // Equivalent to rF
+    ^"sp" // Equivalent to r0
+  | ^"ir" // Equivalent to r3E
+  | ^"pc" // Equivalent to r3F
 
   | ^"r10"
   | ^"r11"

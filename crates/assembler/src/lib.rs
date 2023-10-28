@@ -346,7 +346,7 @@ impl Assembler {
 
     fn parse_register(&mut self, pair: Pair<Rule>) -> u32 {
         match pair.as_str().to_lowercase().as_str() {
-            "r0" => 0x00,
+            "r0" | "sp" => 0x00,
             "r1" => 0x01,
             "r2" => 0x02,
             "r3" => 0x03,
@@ -361,7 +361,7 @@ impl Assembler {
             "rc" => 0x0C,
             "rd" => 0x0D,
             "re" => 0x0E,
-            "rf" | "pc" => 0x0F,
+            "rf" => 0x0F,
             "r10" => 0x10,
             "r11" => 0x11,
             "r12" => 0x12,
@@ -408,8 +408,8 @@ impl Assembler {
             "r3b" => 0x3B,
             "r3c" => 0x3C,
             "r3d" => 0x3D,
-            "r3e" => 0x3E,
-            "r3f" => 0x3F,
+            "r3e" | "ir" => 0x3E,
+            "r3f" | "pc" => 0x3F,
             register => unreachable!("Register: {}", register),
         }
     }
