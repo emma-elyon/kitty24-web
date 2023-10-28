@@ -1,33 +1,44 @@
+interrupt_vector:
+    lessi   r0, r0, 0
+    clet    r1, main
+    clethi  r1, main
+    cori    pc, r1, 0
 
-let     r30, 0xFA0003
-lethi   r30, 0xFA0003
+interrupt_handler:
+    let    r1, 0xFF
+    and    r1, r0, r1
 
-let     r0, 0 ; cycle counter
-let     r1, 0 ; note_index
-let     r2, notes~.length ; note_count
-let     r3, notes
-lethi   r3, notes
-
-let     r4, 0 ; more counter
 
 main:
-    subi    r0, r0, 1
+    let     r30, 0xFA0003
+    lethi   r30, 0xFA0003
+
+    let     r28, 0 ; cycle counter
+    let     r1, 0 ; note_index
+    let     r2, notes~.length ; note_count
+    let     r3, notes
+    lethi   r3, notes
+
+    let     r4, 0 ; more counter
+
+play:
+    subi    r28, r28, 1
     csubi   r4, r4, 1
     caddi   pc, pc, ~.next_note
-    subi    pc, pc, ~main
+    subi    pc, pc, ~play
     .next_note:
-        let     r0, 4096000
-        lethi   r0, 4096000
+        let     r28, 4096000
+        lethi   r28, 4096000
         let     r4, 0
         add     r12, r3, r1
         load    r10, r12, notes~.midi
         load    r11, r12, notes~.duration
         store   r30, r10, 0
-        mul     r0, r0, r11
+        mul     r28, r28, r11
         addi    r1, r1, 1
         less    r3F, r1, r2
         clet    r1, 0
-        subi    pc, pc, ~main
+        subi    pc, pc, ~play
 
 notes:
     .midi:

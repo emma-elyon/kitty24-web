@@ -1,3 +1,7 @@
+pub const REGISTER_PROGRAM_COUNTER: u32 = 0x0F;
+pub const REGISTER_GLOBAL: u32 = 0x3F;
+pub const REGISTER_INTERRUPT: u32 = 0x00;
+
 #[derive(Clone, Copy)]
 pub enum Op {
     Let = 0o00,
