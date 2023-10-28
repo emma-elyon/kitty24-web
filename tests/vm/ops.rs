@@ -2,13 +2,13 @@ mod let_op {
     use crate::common::run_virtual_machine;
 
     #[test]
-    fn r0_is_zero() {
-        let [r0, ..] = run_virtual_machine(
+    fn sp_is_assignable() {
+        let [sp, ..] = run_virtual_machine(
             r"
-            let     r0, 4095
+            let     sp, 4095
         ",
         );
-        assert_eq!(r0, 0);
+        assert_eq!(sp, 4095);
     }
 
     #[test]

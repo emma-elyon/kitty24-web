@@ -5,8 +5,6 @@ mod io;
 
 use common::*;
 use cpu::*;
-
-pub use cpu::REGISTER_COUNT;
 use io::FRAMEBUFFER;
 
 const BITS: usize = 24;
@@ -42,6 +40,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     /// Create a new virtual machine with the given ROM.
     pub fn new(rom: Vec<u8>) -> Self {
+        // TODO: Fix nop (no longer 0x000000)
         let mut ram = vec![0; MEMORY_SIZE];
         ram.splice(0..rom.len(), rom);
         Self {
@@ -112,6 +111,8 @@ impl VirtualMachine {
             // cycle = beginning of VBLANK (ideally)
         }
 
+        self.cpu.set(REGISTER_INTERRUPT, INTERRUPT_VBLANK);
+
         // Keep updating audio samples in vertical blank.
         let cycle = HEIGHT * CYCLES_PER_SCANLINE;
         // cycle = beginning of VBLANK
@@ -132,9 +133,6 @@ impl VirtualMachine {
         // TODO: self.step(cycles_after_last_sample)
         // let cycle = cycle + cycles_after_first_sample
         // cycle = at next frame (ideally)
-
-        // self.frames += self.audio.len();
-        // self.ram[0] += 1;
     }
 
     /// Step the virtual machine for `cycles`.
@@ -151,7 +149,7 @@ impl VirtualMachine {
             ]);
             let c = instruction & 0b1_00000_000000_000000_000000;
             let c = c != 0;
-            if !c || self.cpu.condition {
+            if !c || self.cpu.condition() {
                 let op = instruction & 0b0_11111_000000_000000_000000;
                 let op = op >> 18;
                 let op: Op = op.into();
@@ -203,7 +201,7 @@ impl VirtualMachine {
             Slessi => {
                 let t = ((s << 8) as i32) < (u << 8) as i32;
                 self.cpu.set(r, t as u32);
-                self.cpu.condition = s == u;
+                self.cpu.set_condition(s == u);
             }
             Load => {
                 let i = (u << 2) as i8 as i32 >> 2;
@@ -261,38 +259,38 @@ impl VirtualMachine {
             }
             Ori => {
                 self.cpu.set(r, s | u);
-                self.cpu.condition = s | u == 0
+                self.cpu.set_condition(s | u == 0);
             }
             Nori => {
                 self.cpu.set(r, !(s | u));
-                self.cpu.condition = !(s | u) & MASK as u32 == 0
+                self.cpu.set_condition(!(s | u) & MASK as u32 == 0);
             }
             Andi => {
                 self.cpu.set(r, s & u);
-                self.cpu.condition = s & u == 0
+                self.cpu.set_condition(s & u == 0);
             }
             Xori => {
                 self.cpu.set(r, s ^ u);
-                self.cpu.condition = s ^ u == 0
+                self.cpu.set_condition(s ^ u == 0);
             }
             Lessi => {
                 self.cpu.set(r, (s < u) as u32);
-                self.cpu.condition = s == u;
+                self.cpu.set_condition(s == u);
             }
             Addi => {
                 let (add, overflow) = s.overflowing_add(u);
                 self.cpu.set(r, add);
-                self.cpu.condition = overflow || 0xFFFFFF < s + u;
+                self.cpu.set_condition(overflow || 0xFFFFFF < s + u);
             }
             Subi => {
                 let (sub, overflow) = s.overflowing_sub(u);
                 self.cpu.set(r, sub);
-                self.cpu.condition = overflow || 0 > s as i32 - u as i32;
+                self.cpu.set_condition(overflow || 0 > s as i32 - u as i32);
             }
             Muli => {
                 let (mul, overflow) = s.overflowing_mul(u);
                 self.cpu.set(r, mul);
-                self.cpu.condition = overflow || 0xFFFFFF < s as u64 * u as u64;
+                self.cpu.set_condition(overflow || 0xFFFFFF < s as u64 * u as u64);
             }
             _ => unreachable!(),
         }
@@ -354,42 +352,42 @@ impl VirtualMachine {
             Sless => {
                 let u = ((s << 8) as i32) < (t << 8) as i32;
                 self.cpu.set(r, u as u32);
-                self.cpu.condition = s == t;
+                self.cpu.set_condition(s == t);
             }
             Or => {
                 self.cpu.set(r, s | t);
-                self.cpu.condition = s | t == 0
+                self.cpu.set_condition(s | t == 0);
             }
             Nor => {
                 self.cpu.set(r, !(s | t));
-                self.cpu.condition = !(s | t) & MASK as u32 == 0
+                self.cpu.set_condition(!(s | t) & MASK as u32 == 0);
             }
             And => {
                 self.cpu.set(r, s & t);
-                self.cpu.condition = s & t == 0
+                self.cpu.set_condition(s & t == 0);
             }
             Xor => {
                 self.cpu.set(r, s ^ t);
-                self.cpu.condition = s ^ t == 0
+                self.cpu.set_condition(s ^ t == 0);
             }
             Less => {
                 self.cpu.set(r, (s < t) as u32);
-                self.cpu.condition = s == t;
+                self.cpu.set_condition(s == t);
             }
             Add => {
                 let (add, overflow) = s.overflowing_add(t);
                 self.cpu.set(r, add);
-                self.cpu.condition = overflow || 0xFFFFFF < s + t;
+                self.cpu.set_condition(overflow || 0xFFFFFF < s + t);
             }
             Sub => {
                 let (sub, overflow) = s.overflowing_sub(t);
                 self.cpu.set(r, sub);
-                self.cpu.condition = overflow || 0 > s as i32 - t as i32;
+                self.cpu.set_condition(overflow || 0 > s as i32 - t as i32);
             }
             Mul => {
                 let (mul, overflow) = s.overflowing_mul(t);
                 self.cpu.set(r, mul);
-                self.cpu.condition = overflow || 0xFFFFFF < s as u64 * t as u64;
+                self.cpu.set_condition(overflow || 0xFFFFFF < s as u64 * t as u64);
             }
             _ => unreachable!(),
         }

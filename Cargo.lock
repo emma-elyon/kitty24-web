@@ -74,6 +74,7 @@ name = "kitty24"
 version = "0.1.0"
 dependencies = [
  "assembler",
+ "common",
  "pest",
  "virtual_machine",
 ]

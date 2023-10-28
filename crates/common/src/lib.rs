@@ -1,6 +1,10 @@
+pub const REGISTER_COUNT: usize = 0x40;
+
 pub const REGISTER_PROGRAM_COUNTER: u32 = 0x3F;
 pub const REGISTER_GLOBAL: u32 = 0x0;
 pub const REGISTER_INTERRUPT: u32 = 0x3E;
+
+pub const INTERRUPT_VBLANK: u32 = 0x0000_04;
 
 #[derive(Clone, Copy)]
 pub enum Op {
