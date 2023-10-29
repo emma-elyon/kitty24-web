@@ -1,44 +1,95 @@
 interrupt_vector:
-    lessi   r0, r0, 0
-    clet    r1, main
-    clethi  r1, main
-    cori    pc, r1, 0
-
-interrupt_handler:
-    let    r1, 0xFF
-    and    r1, r0, r1
-
+    lessi   r3D, ir, 0
+    caddi   pc, pc, ~main
+    lessi   r3D, ir, 4
+    caddi   pc, pc, ~vblank
+    let     ir, 0
 
 main:
-    let     r30, 0xFA0003
-    lethi   r30, 0xFA0003
+    let     r1, 16
+    let     rA, 0xFF0000
+    lethi   rA, 0xFF0000
+    store2  rA, r1, 0
+loop:
+    subi    pc, pc, ~loop
 
-    let     r28, 0 ; cycle counter
-    let     r1, 0 ; note_index
-    let     r2, notes~.length ; note_count
-    let     r3, notes
-    lethi   r3, notes
+vblank:
+    let     r1, 320
+    let     r2, 0
+    let     r3, 320
+    let     r4, 180
+    let     r5, 0x800080
+    lethi   r5, 0x800080
+    let     r6, 255
+    let     rB, draw_rectangle
+    lethi   rB, draw_rectangle
+    addi    rA, pc, ~.after1
+    ori     pc, rB, 0
+    .after1:
+    let     rA, 0xFF0000
+    lethi   rA, 0xFF0000
+    load2   r1, rA, 0
+    addi    r1, r1, 1
+    store2  rA, r1, 0
+    let     r2, 9
+    let     r3, 160
+    let     r4, 90
+    let     r5, 0x8080FF
+    lethi   r5, 0x8080FF
+    let     r6, 128
+    let     rB, draw_rectangle
+    lethi   rB, draw_rectangle
+    addi    rA, pc, ~.after2
+    ori     pc, rB, 0
+    .after2:
+    subi    r10, r10, 1
+    caddi   pc, pc, ~next_note
+    let     ir, 0
+next_note:
+    let     r10, 60
+    let     rA, notes.duration
+    lethi   rA, notes.duration
+    add     rA, rA, r11
+    load    r1, rA, 0
+    mul     r10, r10, r1
+    let     rA, notes.midi
+    lethi   rA, notes.midi
+    add     rA, rA, r11
+    load    r1, rA, 0
+    let     rA, 0xFA0003
+    lethi   rA, 0xFA0003
+    store   rA, r1, 0
+    addi    r11, r11, 1
+    lessi   rD, r11, notes~.length
+    clet    r11, 0
+    let     ir, 0
 
-    let     r4, 0 ; more counter
-
-play:
-    subi    r28, r28, 1
-    csubi   r4, r4, 1
-    caddi   pc, pc, ~.next_note
-    subi    pc, pc, ~play
-    .next_note:
-        let     r28, 4096000
-        lethi   r28, 4096000
-        let     r4, 0
-        add     r12, r3, r1
-        load    r10, r12, notes~.midi
-        load    r11, r12, notes~.duration
-        store   r30, r10, 0
-        mul     r28, r28, r11
-        addi    r1, r1, 1
-        less    r3D, r1, r2
-        clet    r1, 0
-        subi    pc, pc, ~play
+draw_rectangle: ; x = r1, y = r2, w = r3, h = r4, c = r5, a = r6
+    let     rB, 0xFB0000
+    lethi   rB, 0xFB0000
+    let     r7, 1280
+    mul     r8, r2, r7
+    muli    r1, r1, 4
+    add     r8, r1, r8
+    add     rB, r8, rB
+    subi    rC, r3, 1
+    muli    rE, r3, 4
+    .loop:
+        store3  rB, r5, 0
+        store   rB, r6, 3
+        addi    rB, rB, 4
+        subi    rC, rC, 1
+        caddi   pc, pc, ~.next_line
+        subi    pc, pc, ~.loop
+        .next_line:
+            add     rB, rB, r7
+            sub     rB, rB, rE
+            subi    rC, r3, 1
+            subi    r4, r4, 1
+            caddi   pc, pc, ~.end
+            subi    pc, pc, ~.loop
+    .end:
+    ori     pc, rA, 0
 
 notes:
     .midi:
