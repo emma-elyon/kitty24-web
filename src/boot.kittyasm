@@ -36,7 +36,7 @@ vblank:
     let     r4, 90
     let     r5, 0x8080FF
     lethi   r5, 0x8080FF
-    let     r6, 128
+    let     r6, 255
     let     rB, draw_rectangle
     lethi   rB, draw_rectangle
     addi    rA, pc, ~.after2
@@ -46,7 +46,7 @@ vblank:
     caddi   pc, pc, ~next_note
     let     ir, 0
 next_note:
-    let     r10, 60
+    let     r10, 20
     let     rA, notes.duration
     lethi   rA, notes.duration
     add     rA, rA, r11

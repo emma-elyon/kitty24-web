@@ -5,7 +5,9 @@ mod io;
 
 use common::*;
 use cpu::*;
-use io::FRAMEBUFFER;
+use io::*;
+
+use crate::io::COMPOSITE_MODE;
 
 const BITS: usize = 24;
 const MASK: usize = 2_usize.pow(BITS as u32) - 1;
@@ -182,6 +184,72 @@ impl VirtualMachine {
         self.audio[sample_index] = 0.125 * (self.sin_phase - TAU / 2.0).signum();
     }
 
+    /// Perform composition operation specified in IO registers.
+    fn composite(&mut self, mode: u32) {
+        let source_address = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_SRC_ADDR + 0],
+            self.ram[COMPOSITE_SRC_ADDR + 1],
+            self.ram[COMPOSITE_SRC_ADDR + 2],
+        ]);
+        let source_width = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_SRC_WIDTH + 0],
+            self.ram[COMPOSITE_SRC_WIDTH + 1],
+            self.ram[COMPOSITE_SRC_WIDTH + 2],
+        ]);
+        let source_height = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_SRC_HEIGHT + 0],
+            self.ram[COMPOSITE_SRC_HEIGHT + 1],
+            self.ram[COMPOSITE_SRC_HEIGHT + 2],
+        ]);
+        let source_stride = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_SRC_STRIDE + 0],
+            self.ram[COMPOSITE_SRC_STRIDE + 1],
+            self.ram[COMPOSITE_SRC_STRIDE + 2],
+        ]);
+        let destination_p0 = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_DST_P0 + 0],
+            self.ram[COMPOSITE_DST_P0 + 1],
+            self.ram[COMPOSITE_DST_P0 + 2],
+        ]);
+        let destination_p1 = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_DST_P1 + 0],
+            self.ram[COMPOSITE_DST_P1 + 1],
+            self.ram[COMPOSITE_DST_P1 + 2],
+        ]);
+        let destination_p2 = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_DST_P2 + 0],
+            self.ram[COMPOSITE_DST_P2 + 1],
+            self.ram[COMPOSITE_DST_P2 + 2],
+        ]);
+        let destination_p3 = u32::from_be_bytes([
+            0,
+            self.ram[COMPOSITE_DST_P3 + 0],
+            self.ram[COMPOSITE_DST_P3 + 1],
+            self.ram[COMPOSITE_DST_P3 + 2],
+        ]);
+        let destination_address = FRAMEBUFFER;
+        // Assuming points go clockwise top-left to bottom-left
+        let x0 = destination_p0 % WIDTH as u32;
+        let y0 = destination_p0 / WIDTH as u32;
+        let x1 = destination_p1 % WIDTH as u32;
+        let y1 = destination_p1 / WIDTH as u32;
+        let x2 = destination_p2 % WIDTH as u32;
+        let y2 = destination_p2 / WIDTH as u32;
+        let x3 = destination_p3 % WIDTH as u32;
+        let y3 = destination_p3 / WIDTH as u32;
+        let min_x = x0.min(x1).min(x2).min(x3);
+        let max_x = x0.max(x1).max(x2).max(x3);
+        let min_y = y0.min(y1).min(y2).min(y3);
+        let max_y = y0.max(y1).max(y2).max(y3);
+    }
+
     /// Execute immediate instruction.
     fn i(&mut self, op: Op, instruction: u32) {
         let r = instruction & 0o77_00_00;
@@ -237,8 +305,9 @@ impl VirtualMachine {
             Store => {
                 let i = (u << 2) as i8 as i32 >> 2;
                 let address = self.cpu[r] as i32 + i;
+                let address = address as usize;
                 // TODO: Add overflow/underflow test.
-                self.ram[address as usize] = s as u8;
+                self.ram[address] = s as u8;
             }
             Store2 => {
                 let i = (u << 2) as i8 as i32 >> 2;
@@ -251,11 +320,16 @@ impl VirtualMachine {
             Store3 => {
                 let i = (u << 2) as i8 as i32 >> 2;
                 let address = self.cpu[r] as i32 + i;
+                let address = address as usize;
                 // TODO: Add overflow/underflow test.
                 let [_, a, b, c] = s.to_be_bytes();
-                self.ram[address as usize + 0] = a;
-                self.ram[address as usize + 1] = b;
-                self.ram[address as usize + 2] = c;
+                self.ram[address + 0] = a;
+                self.ram[address + 1] = b;
+                self.ram[address + 2] = c;
+                match address {
+                    COMPOSITE_MODE => self.composite(s),
+                    _ => {}
+                }
             }
             Ori => {
                 self.cpu.set(r, s | u);
