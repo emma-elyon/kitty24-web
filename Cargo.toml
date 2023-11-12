@@ -3,14 +3,20 @@ name = "kitty24"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib"]
-
 [dependencies]
 virtual_machine = { path = "crates/virtual_machine" }
 assembler = { path = "crates/assembler"}
 common = { path = "crates/common"}
 pest = "2.7.4"
+bevy = "0.12.0"
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
 
 [profile.release]
 lto = true
