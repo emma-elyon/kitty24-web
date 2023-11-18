@@ -1,0 +1,14 @@
+cargo-features = ["per-package-target"]
+
+[package]
+name = "emulator_web"
+version = "0.1.0"
+edition = "2021"
+forced-target = "wasm32-unknown-unknown"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+assembler = { path = "../assembler" }
+virtual_machine = { path = "../virtual_machine" }

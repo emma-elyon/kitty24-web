@@ -1,16 +1,27 @@
-[package]
-name = "kitty24"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-[lib]
-crate-type = ["cdylib"]
+members = [
+	"assembler",
+	"console",
+	"emulator_standalone",
+	"emulator_web",
+	"virtual_machine",
+]
 
-[dependencies]
-virtual_machine = { path = "crates/virtual_machine" }
-assembler = { path = "crates/assembler"}
-common = { path = "crates/common"}
-pest = "2.7.4"
+resolver = "2"
+# [package]
+# name = "kitty24"
+# version = "0.1.0"
+# edition = "2021"
 
-[profile.release]
-lto = true
+# [lib]
+# crate-type = ["cdylib"]
+
+# [dependencies]
+# virtual_machine = { path = "crates/virtual_machine" }
+# assembler = { path = "crates/assembler"}
+# common = { path = "crates/common"}
+# pest = "2.7.4"
+
+# [profile.release]
+# lto = true
