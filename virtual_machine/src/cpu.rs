@@ -1,4 +1,4 @@
-use std::{ops::Index, collections::BinaryHeap};
+use std::{collections::BinaryHeap, ops::Index};
 
 use common::*;
 
@@ -90,7 +90,8 @@ impl Cpu {
     fn switch_context(&mut self, interrupt: u32) {
         // Copy global register to new context.
         let context = (interrupt & CONTEXT_MASK) as usize;
-        self.registers[context][REGISTER_GLOBAL as usize] = self.registers[self.context][REGISTER_GLOBAL as usize];
+        self.registers[context][REGISTER_GLOBAL as usize] =
+            self.registers[self.context][REGISTER_GLOBAL as usize];
         self.registers[context][REGISTER_INTERRUPT as usize] = interrupt;
 
         // Switch to new context.

@@ -2,7 +2,7 @@
 
 members = [
 	"assembler",
-	"kitty24_console",
+	"kitty24",
 	"emulator_standalone",
 	"emulator_web",
 	"virtual_machine",

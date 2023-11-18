@@ -1,10 +1,12 @@
 [package]
-name = "kitty24_console"
+name = "kitty24"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dialoguer = "0.11.0"
+dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
 dirs = "5.0.1"
+serde = { version = "1.0.192", features = ["derive"] }
+toml = "0.8.8"

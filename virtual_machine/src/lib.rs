@@ -185,26 +185,26 @@ impl VirtualMachine {
     }
 
     /// Perform composition operation specified in IO registers.
-    fn composite(&mut self, mode: u32) {
-        let source_address = u32::from_be_bytes([
+    fn composite(&mut self, _mode: u32) {
+        let _source_address = u32::from_be_bytes([
             0,
             self.ram[COMPOSITE_SRC_ADDR + 0],
             self.ram[COMPOSITE_SRC_ADDR + 1],
             self.ram[COMPOSITE_SRC_ADDR + 2],
         ]);
-        let source_width = u32::from_be_bytes([
+        let _source_width = u32::from_be_bytes([
             0,
             self.ram[COMPOSITE_SRC_WIDTH + 0],
             self.ram[COMPOSITE_SRC_WIDTH + 1],
             self.ram[COMPOSITE_SRC_WIDTH + 2],
         ]);
-        let source_height = u32::from_be_bytes([
+        let _source_height = u32::from_be_bytes([
             0,
             self.ram[COMPOSITE_SRC_HEIGHT + 0],
             self.ram[COMPOSITE_SRC_HEIGHT + 1],
             self.ram[COMPOSITE_SRC_HEIGHT + 2],
         ]);
-        let source_stride = u32::from_be_bytes([
+        let _source_stride = u32::from_be_bytes([
             0,
             self.ram[COMPOSITE_SRC_STRIDE + 0],
             self.ram[COMPOSITE_SRC_STRIDE + 1],
@@ -234,7 +234,7 @@ impl VirtualMachine {
             self.ram[COMPOSITE_DST_P3 + 1],
             self.ram[COMPOSITE_DST_P3 + 2],
         ]);
-        let destination_address = FRAMEBUFFER;
+        let _destination_address = FRAMEBUFFER;
         // Assuming points go clockwise top-left to bottom-left
         let x0 = destination_p0 % WIDTH as u32;
         let y0 = destination_p0 / WIDTH as u32;
@@ -244,10 +244,10 @@ impl VirtualMachine {
         let y2 = destination_p2 / WIDTH as u32;
         let x3 = destination_p3 % WIDTH as u32;
         let y3 = destination_p3 / WIDTH as u32;
-        let min_x = x0.min(x1).min(x2).min(x3);
-        let max_x = x0.max(x1).max(x2).max(x3);
-        let min_y = y0.min(y1).min(y2).min(y3);
-        let max_y = y0.max(y1).max(y2).max(y3);
+        let _min_x = x0.min(x1).min(x2).min(x3);
+        let _max_x = x0.max(x1).max(x2).max(x3);
+        let _min_y = y0.min(y1).min(y2).min(y3);
+        let _max_y = y0.max(y1).max(y2).max(y3);
     }
 
     /// Execute immediate instruction.
@@ -364,7 +364,8 @@ impl VirtualMachine {
             Muli => {
                 let (mul, overflow) = s.overflowing_mul(u);
                 self.cpu.set(r, mul);
-                self.cpu.set_condition(overflow || 0xFFFFFF < s as u64 * u as u64);
+                self.cpu
+                    .set_condition(overflow || 0xFFFFFF < s as u64 * u as u64);
             }
             _ => unreachable!(),
         }
@@ -461,7 +462,8 @@ impl VirtualMachine {
             Mul => {
                 let (mul, overflow) = s.overflowing_mul(t);
                 self.cpu.set(r, mul);
-                self.cpu.set_condition(overflow || 0xFFFFFF < s as u64 * t as u64);
+                self.cpu
+                    .set_condition(overflow || 0xFFFFFF < s as u64 * t as u64);
             }
             _ => unreachable!(),
         }

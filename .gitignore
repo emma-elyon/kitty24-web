@@ -1,3 +1,4 @@
 /build
 /target
 /web/kitty24.wasm
+settings.toml
