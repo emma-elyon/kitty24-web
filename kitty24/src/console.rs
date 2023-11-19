@@ -4,7 +4,8 @@ use std::{
     path::PathBuf,
 };
 
-use dialoguer::{console::Term, Select, FuzzySelect};
+use compiler::Compiler;
+use dialoguer::{console::Term, FuzzySelect, Select};
 use serde::{Deserialize, Serialize};
 
 const SETTINGS_PATH: &str = "settings.toml";
@@ -49,7 +50,7 @@ impl Console {
             self.out.clear_screen()?;
             println!("{} 0.1.0", title);
             let selection = Select::new()
-				.default(0)
+                .default(0)
                 .item("Open project...")
                 .item("Run ROM...")
                 .item("Debug ROM...")
@@ -81,57 +82,62 @@ impl Console {
                 .filter(|entry| entry.metadata().unwrap().is_dir())
                 .map(|entry| entry.file_name().to_str().unwrap().to_string())
                 .collect::<Vec<_>>();
-			let selection = FuzzySelect::new()
-				.default(0)
-				.items(folders.as_slice())
-				.interact_opt()
-				.unwrap();
-			match selection {
-				Some(selection) => self.open_project_folder(projects_folder.join(&folders[selection]))?,
-				None => return Ok(()),
-			}
+            let selection = FuzzySelect::new()
+                .default(0)
+                .items(folders.as_slice())
+                .interact_opt()
+                .unwrap();
+            match selection {
+                Some(selection) => {
+                    self.open_project_folder(projects_folder.join(&folders[selection]))?
+                }
+                None => return Ok(()),
+            }
         }
     }
 
-	fn open_project_folder(&mut self, folder: PathBuf) -> Result<(), std::io::Error> {
+    fn open_project_folder(&mut self, folder: PathBuf) -> Result<(), std::io::Error> {
         let title = dialoguer::console::style(folder.file_name().unwrap().to_str().unwrap())
             .bright()
             .bold();
-		let target = match self.settings.target {
-			Target::Web => "in browser",
-			Target::Native => "as native application",
-		};
-		loop {
+        let target = match self.settings.target {
+            Target::Web => "in browser",
+            Target::Native => "as native application",
+        };
+        loop {
             self.out.clear_screen()?;
             println!("{}", title);
-			let selection = Select::new()
-				.default(0)
-				.item("Open folder in explorer")
-				.item("Build project")
-				.item("Debug in browser")
-				.item(format!("Run {}", target))
-				.interact_opt()
-				.unwrap();
-			match selection {
-				Some(0) => self.open_folder_in_explorer(&folder)?,
-				Some(1) => todo!(),
-				Some(2) => todo!(),
-				Some(3) => match self.settings.target {
-					Target::Web => self.run_in_browser(&folder)?,
-					Target::Native => todo!(),
-				},
-				_ => return Ok(()),
-			}
-		}
-	}
+            let selection = Select::new()
+                .default(0)
+                .item("Open folder in explorer")
+                .item("Build project")
+                .item("Debug in browser")
+                .item(format!("Run {}", target))
+                .interact_opt()
+                .unwrap();
+            match selection {
+                Some(0) => self.open_folder_in_explorer(&folder)?,
+                Some(1) => todo!(),
+                Some(2) => todo!(),
+                Some(3) => match self.settings.target {
+                    Target::Web => self.run_in_browser(&folder)?,
+                    Target::Native => todo!(),
+                },
+                _ => return Ok(()),
+            }
+        }
+    }
 
-	fn open_folder_in_explorer(&self, folder: &PathBuf) -> Result<(), std::io::Error> {
-		opener::reveal(folder).map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))
-	}
+    fn open_folder_in_explorer(&self, folder: &PathBuf) -> Result<(), std::io::Error> {
+        opener::reveal(folder)
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))
+    }
 
-	fn run_in_browser(&self, folder: &PathBuf) -> Result<(), std::io::Error> {
-		todo!();
-	}
+    fn run_in_browser(&self, folder: &PathBuf) -> Result<(), std::io::Error> {
+        let rom = Compiler::compile(folder)?;
+        opener::open("http://localhost:3932/")
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))
+    }
 
     fn run_rom(&mut self) -> Result<(), std::io::Error> {
         todo!();
