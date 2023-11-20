@@ -9,7 +9,8 @@ edition = "2021"
 compiler = { path = "../compiler" }
 dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
 dirs = "5.0.1"
-opener = { versoin = "0.6.1", features = ["reveal"] }
+opener = { version = "0.6.1", features = ["reveal"] }
 winapi = { version = "*", features = ["winerror"] }
 serde = { version = "1.0.192", features = ["derive"] }
 toml = "0.8.8"
+notify = "6.1.1"

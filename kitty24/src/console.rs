@@ -1,6 +1,7 @@
 use std::{
     fs::{create_dir_all, read_to_string, File},
-    io::Write,
+    io::{Read, Write},
+    net::TcpListener,
     path::PathBuf,
 };
 
@@ -14,7 +15,7 @@ const KITTY24_FOLDER: &str = "Kitty24";
 pub struct Console {
     settings: Settings,
     out: Term,
-    err: Term,
+    _err: Term,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -34,7 +35,11 @@ impl Console {
         let settings = Self::read_settings();
         let out = Term::stdout();
         let err = Term::stderr();
-        Self { settings, out, err }
+        Self {
+            settings,
+            out,
+            _err: err,
+        }
     }
 
     pub fn run(&mut self) -> Result<(), std::io::Error> {
@@ -57,6 +62,7 @@ impl Console {
                 .item("Settings...")
                 .interact_opt()
                 .unwrap();
+
             match selection {
                 Some(0) => self.open_project()?,
                 Some(1) => self.run_rom()?,
@@ -136,7 +142,72 @@ impl Console {
     fn run_in_browser(&self, folder: &PathBuf) -> Result<(), std::io::Error> {
         let rom = Compiler::compile(folder)?;
         opener::open("http://localhost:3932/")
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
+        // Inline http server ...(*￣０￣)ノ
+        let listener = TcpListener::bind("127.0.0.1:3932").unwrap();
+        for stream in listener.incoming() {
+            match stream {
+                Ok(mut stream) => {
+                    let mut buffer = [0u8; 4096];
+                    match stream.read(&mut buffer) {
+                        Ok(length) => {
+                            let request = String::from_utf8_lossy(&buffer[..length]);
+                            let request = request.split(' ').collect::<Vec<_>>();
+                            if request.len() > 1 {
+                                let path = request[1];
+                                let (content, content_type): (&[u8], &str) = match path {
+                                    "/audio-processor.js" => (
+                                        include_bytes!("../../web/audio-processor.js"),
+                                        "application/javascript; charset=utf-8",
+                                    ),
+                                    "/" => (
+                                        include_bytes!("../../web/index.html"),
+                                        "text/html; charset=utf-8",
+                                    ),
+                                    "/kitty24.js" => (
+                                        include_bytes!("../../web/kitty24.js"),
+                                        "application/javascript; charset=utf-8",
+                                    ),
+                                    "/kitty24.wasm" => (
+                                        include_bytes!("../../web/kitty24.wasm"),
+                                        "application/wasm",
+                                    ),
+                                    "/style.css" => (
+                                        include_bytes!("../../web/style.css"),
+                                        "text/css; charset=utf-8",
+                                    ),
+                                    "/favicon.ico" => {
+                                        (include_bytes!("../../web/favicon.png"), "image/png")
+                                    }
+                                    "/rom.kitty24" => (&rom, "application/octet-stream"),
+                                    _ => (&[], "application/octet-stream"),
+                                };
+                                let header = format!(
+                                    "HTTP/1.1 200 OK\r\nContent-Type: {}\r\n\r\n",
+                                    content_type
+                                );
+                                let response = [header.as_bytes(), content].concat();
+                                match stream.write(&response) {
+                                    Err(error) => eprintln!("ERROR: {}", error),
+                                    _ => {}
+                                }
+                            }
+                        }
+                        Err(error) => eprintln!("ERROR: {}", error),
+                    }
+                }
+                Err(error) => eprintln!("ERROR: {}", error),
+            }
+        }
+        loop {
+            if dialoguer::Confirm::new()
+                .with_prompt("Stop server?")
+                .interact()
+                .unwrap()
+            {
+                return Ok(());
+            }
+        }
     }
 
     fn run_rom(&mut self) -> Result<(), std::io::Error> {
@@ -163,7 +234,7 @@ impl Console {
         }
     }
 
-    fn write_settings(&self) {
+    fn _write_settings(&self) {
         let settings = toml::to_string(&self.settings).unwrap();
         write!(File::create(SETTINGS_PATH).unwrap(), "{}", settings).unwrap();
     }
